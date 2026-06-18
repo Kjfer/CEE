@@ -126,6 +126,54 @@ El flujo de conversión deja de pasar por "carrito → checkout mock" y termina 
 
 ---
 
+### ✅ Santiago — Navbar Desktop (Tarea 2)
+
+**Estado:** Completada  
+**Fecha:** 2026-06-17  
+**Rama:** `feature/fase2-navigation-contract`
+
+#### Objetivo
+Terminar la Navbar desktop sobre el contrato de Elvis (`navigationLinks`, `useAuth()`): logo rojo, links con estado activo, botón de sesión condicional, sticky, y reemplazar los elementos HTML planos por `Button` de shadcn.
+
+#### Cambios realizados
+
+##### 1. `apps/web/src/components/layout/Navbar.tsx`
+
+- **Antes:**
+  - Botón de sesión y botón hamburguesa eran un `<Link>`/`<button>` con clases Tailwind manuales
+- **Después:**
+  - Botón de sesión usa `Button asChild variant="outline" size="sm"` envolviendo el `<Link>` (mantiene `isAuthenticated ? 'Mi cuenta' : 'Iniciar sesion'`)
+  - Botón hamburguesa usa `Button variant="ghost" size="icon"` con el icono `Menu` de `lucide-react`
+  - Se mantiene sin cambios lo ya correcto: logo rojo a la izquierda, `navigationLinks.map()` con `<NavLink>` (clase activa `text-cee-red`), `sticky top-0 z-50`, `hidden md:flex` en links de escritorio, `md:hidden` en el botón hamburguesa, estado `isOpen` controlado en Navbar y pasado a `MobileMenu` por `onClose`
+
+##### 2. Badge de carrito — intentado y revertido
+
+- Se probó agregar un ícono `ShoppingCart` con `Badge` de cantidad, respaldado por un store `cartStore.ts` y hook `useCartCount()` nuevos
+- **Revertido en la misma tarea:** el carrito está fuera de alcance del proyecto (ver "Eliminación del Carrito de Compras" arriba) — no se vuelve a introducir ese concepto
+- Se eliminaron `apps/web/src/store/cartStore.ts` y `apps/web/src/hooks/useCart.ts` creados durante la prueba; no quedan referencias a `cartStore`/`useCartCount` en el repo
+
+#### Archivos modificados
+
+- ✅ `apps/web/src/components/layout/Navbar.tsx`
+
+#### Archivos creados y luego eliminados (sin rastro final)
+
+- `apps/web/src/store/cartStore.ts`
+- `apps/web/src/hooks/useCart.ts`
+
+#### Verificación
+
+- ✅ `pnpm --filter web lint` (tsc --noEmit): único error reportado es el preexistente de `CourseCard.tsx` (`Property 'hours' does not exist`), no relacionado con este cambio
+- ✅ `grep` confirma cero referencias a `ShoppingCart`, `cartStore` o `useCartCount` en `apps/web/src/components/layout/Navbar.tsx`
+- ✅ Botón de sesión y hamburguesa ahora usan `Button` de shadcn tal cual, sin editar `components/ui/`
+
+#### Done de la tarea
+
+
+Navbar renderiza en desktop con links activos y botón de sesión funcionando contra los stubs; sin badge de carrito (fuera de alcance).
+
+---
+
 ### ✅ Diana — Footer (Tarea 4)
 
 **Estado:** Completada  
