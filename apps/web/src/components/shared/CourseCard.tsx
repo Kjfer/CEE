@@ -29,7 +29,7 @@ export function CourseCard({ course }: CourseCardProps) {
         </Link>
         <p className="line-clamp-3 text-sm text-muted-foreground">{course.description}</p>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>{course.hours} horas</span>
+          <span>{course.academicHours} horas</span>
           <span>{course.enrolledCount ?? 0} inscritos</span>
         </div>
         <div className="flex items-center justify-between gap-3">
