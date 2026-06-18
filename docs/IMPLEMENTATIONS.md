@@ -315,6 +315,54 @@ No se contó con `chromium-cli` ni navegador headless disponible en este entorno
 
 ---
 
+## Fase 3 — Páginas Públicas
+
+### ✅ Renato — Home + CourseCard (Frente 1)
+
+**Estado:** Completada
+**Fecha:** 2026-06-18
+**Rama:** `feature/fase3-home-courscard`
+
+#### Objetivo
+Construir la primera impresión del sitio: Hero, catálogo resumido con filtro por categoría en la Home, y dejar `CourseCard` reutilizable para el resto de páginas (Catálogo, Detalle de curso).
+
+#### Cambios realizados
+
+##### 1. `apps/web/src/pages/home/HomePage.tsx` (antes vacío, solo placeholder)
+- **Hero:** título, subtítulo y CTA "Explorar Cursos" (`Link` a `ROUTES.CATALOG`) sobre fondo degradado `from-cee-red to-cee-red-dark`
+- **Catálogo resumido:** grid responsive (`sm:grid-cols-2 lg:grid-cols-3`) con hasta 6 cursos (`FEATURED_COUNT`), filtro de categoría arriba, botón "Ver más" al final que enlaza a `ROUTES.CATALOG`
+- Estados de carga y de "sin resultados" para la categoría seleccionada
+
+##### 2. `apps/web/src/components/shared/CourseFilter.tsx` (nuevo)
+- `<select>` HTML nativo (no se instaló `@radix-ui/react-select` solo para un dropdown simple, según el alcance pedido: "no hace falta buscador")
+- Opciones: `Todas` + las 5 categorías de `CourseCategory` (`@cee/types`)
+
+##### 3. `apps/web/src/hooks/useCourses.ts` — extendido
+- Antes: sin parámetros, siempre `coursesService.getAll()`
+- Después: acepta `{ category }`; si `category` es `'Todas'` o `undefined` no filtra; si no, pasa `{ category }` a `coursesService.getAll(params)` (ya soportaba filtrado por categoría del lado del mock)
+- `category` agregado al array de dependencias del `useEffect`
+
+##### 4. `apps/web/src/components/shared/CourseCard.tsx` — sin cambios
+- Ya existía y ya cumplía el grueso de los requisitos del Frente 1 (imagen lazy, categoría como badge, precio tachado + destacado, link a detalle)
+- **Decisión de alcance:** el PDF de la Fase 3 pide botón "Añadir al carrito" conectado a `cartStore`. Esto **no se implementó** porque el carrito fue eliminado explícitamente del proyecto en la Fase 2 (ver "Eliminación del Carrito de Compras" arriba). Se mantiene el botón "Ver detalles" que ya tenía el componente, consistente con esa decisión.
+
+#### Archivos nuevos
+- ✅ `apps/web/src/components/shared/CourseFilter.tsx`
+
+#### Archivos modificados
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+- ✅ `apps/web/src/hooks/useCourses.ts`
+
+#### Verificación
+- ✅ `pnpm --filter web build` sin errores; `HomePage` pasó de 0.33 kB a 48 kB (gzip 18.85 kB) en su propio chunk — code splitting funcionando
+- ✅ Dev server levantado, `curl` a `/` responde `200`
+- ✅ El filtro de categoría cambia los cursos mostrados (verificado por lógica del hook + servicio mock, ya usado en Catálogo/Fase 2)
+
+#### Desviación del documento de tareas
+- "Añadir al carrito" del PDF de Fase 3 no aplica — el carrito está fuera de alcance del proyecto desde la Fase 2 (decisión explícita del equipo). Si en el futuro se requiere un CTA de conversión más fuerte que "Ver detalles", debe diseñarse sin reintroducir el concepto de carrito.
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones
