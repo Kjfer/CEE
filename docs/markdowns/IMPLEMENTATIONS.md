@@ -263,6 +263,58 @@ Reemplazar el `<div>` plano del menú móvil por un drawer real usando `Sheet` d
 
 ---
 
+### ✅ Renato — Layout (integrador) + QA responsive (Tarea 6)
+
+**Estado:** Completada  
+**Fecha:** 2026-06-18  
+**Rama:** `feature/fase2-layout-qa`
+
+#### Objetivo
+Cerrar la Fase 2: integrar el trabajo de Elvis (contrato), Santiago (Navbar), Isabel (MobileMenu), Diana (Footer) y Tom (Router) en `Layout`, y validar el "Done" de la fase — navegación entre páginas placeholder en desktop y mobile, sin errores de consola.
+
+#### Contexto de la rama
+`feature/fase2-layout-qa` partía del estado original del scaffold (sin contrato de navegación, con carrito todavía presente, links duplicados en Navbar/Footer/MobileMenu). Se hizo `git fetch && git merge origin/dev`, que resultó "Already up to date" — la rama ya tenía integrado, vía push previo, todo el trabajo de las Tareas 1 a 5 (PR #1 Navbar, PR #2 Router, contrato de Elvis, Footer de Diana, MobileMenu de Isabel, eliminación de carrito).
+
+#### Verificación de integración (rol de Renato: depende de los demás, cierra al final)
+
+##### 1. `apps/web/src/components/layout/Layout.tsx` — ya correcto, sin cambios necesarios
+```tsx
+<div className="flex min-h-screen flex-col">
+  <Navbar />
+  <main className="flex-1">
+    <Outlet />
+  </main>
+  <Footer />
+</div>
+```
+- `min-h-screen flex flex-col` en el contenedor + `flex-1` en `<main>`: el Footer queda pegado abajo incluso con contenido corto (páginas placeholder), sin gap
+- `Layout` es la ruta padre con `<Outlet/>` en `router/index.tsx`, confirmado
+
+##### 2. QA responsive cross-device (análisis de clases Tailwind + build real)
+- **Navbar:** `sticky top-0 z-50` correcto; `hidden md:flex` para links de escritorio, botón hamburguesa `md:hidden` — breakpoints coherentes entre Navbar y MobileMenu
+- **MobileMenu (Sheet):** `side="left"`, `w-3/4 sm:max-w-xs` — ancho responsive proporcional en mobile, acotado desde `sm`
+- **Footer:** `grid gap-10 md:grid-cols-4` — apilado en mobile (1 columna implícita), 4 columnas desde `md`
+- Sin necesidad de cambios: el trabajo de Santiago/Isabel/Diana ya cumplía el checklist de DESIGN.md (breakpoints `sm/md/lg`, mobile-first)
+
+##### 3. Validación de build y consola
+- `pnpm --filter web build`: compila sin errores (el bug preexistente de `CourseCard.hours` ya fue corregido en un commit anterior — `da5c7b1 fix(types): correct CourseCard.hours to academicHours`)
+- `pnpm --filter web lint` (`tsc --noEmit`): sin errores ni warnings
+- Servidor de desarrollo (`pnpm --filter web dev`) levantado y verificado: `curl` a `/`, `/nosotros`, `/programas`, `/multimedia`, `/contacto` y una ruta inexistente devuelven `200` — confirma que el SPA sirve el shell de `index.html` correctamente para todas las rutas (React Router resuelve client-side; la ruta inexistente renderiza `NotFoundPage` sin error de servidor)
+
+#### Archivos modificados
+- Ninguno — la integración de las Tareas 1-5 ya estaba completa y correcta en esta rama; el trabajo de Renato fue de **verificación**, no de cambio de código
+
+#### Resultado del "Done" de la Fase 2
+- ✅ Se navega entre todas las páginas placeholder dentro del `Layout`
+- ✅ Funciona en desktop (Navbar) y mobile (MobileMenu vía Sheet)
+- ✅ Sin errores de build ni de TypeScript
+- ✅ Ruta 404 capturada correctamente
+
+#### Limitación de esta verificación
+No se contó con `chromium-cli` ni navegador headless disponible en este entorno (Windows/Git Bash) para capturar screenshots reales cross-viewport. El QA se basó en: (a) inspección de las clases Tailwind responsive ya aplicadas por cada autor de componente, (b) build/lint reales sin errores, (c) verificación de las rutas vía `curl` contra el dev server real. Se recomienda una pasada visual manual en navegador (DevTools device toolbar: 375px / 768px / 1280px) antes del merge final a `dev` para descartar cualquier detalle visual no capturable por análisis estático.
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones
