@@ -1,8 +1,395 @@
+import { useEffect, useMemo, useState } from 'react';
+import { SlidersHorizontal, X } from 'lucide-react';
+import type { Course, CourseCategory, CourseModality } from '@cee/types';
+import { FilterSidebar } from '@/components/catalog/FilterSidebar';
+import type { FilterState } from '@/components/catalog/FilterSidebar';
+import { PaginationControls } from '@/components/catalog/PaginationControls';
+import { CourseCard } from '@/components/shared/CourseCard';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { coursesService } from '@/services/courses.service';
+
+// ─── Constantes ───────────────────────────────────────────────────────────────
+
+const PAGE_SIZE = 6;
+
+type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'newest';
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'relevance', label: 'Relevancia' },
+  { value: 'price-asc', label: 'Precio: menor a mayor' },
+  { value: 'price-desc', label: 'Precio: mayor a menor' },
+  { value: 'newest', label: 'Más recientes' },
+];
+
+const EMPTY_FILTERS: FilterState = {
+  categories: [] as CourseCategory[],
+  modalities: [] as CourseModality[],
+  priceMin: '',
+  priceMax: '',
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function applySort(courses: Course[], sortBy: SortOption): Course[] {
+  const copy = [...courses];
+  switch (sortBy) {
+    case 'price-asc':
+      return copy.sort((a, b) => a.price - b.price);
+    case 'price-desc':
+      return copy.sort((a, b) => b.price - a.price);
+    case 'newest':
+      return copy.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    default:
+      return copy; // relevance = orden original del mock
+  }
+}
+
+// ─── Componente ───────────────────────────────────────────────────────────────
+
 export default function CatalogPage() {
+  // Estado base
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Controles de UI
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
+  const [sortBy, setSortBy] = useState<SortOption>('relevance');
+  const [page, setPage] = useState(1);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  // ── Carga inicial ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+
+    coursesService
+      .getAll({ pageSize: 100 }) // traemos todo, filtramos/paginamos client-side
+      .then((res) => {
+        if (isMounted) {
+          // Solo mostramos cursos publicados en el catálogo público
+          setAllCourses(res.data.filter((c) => c.status === 'published'));
+        }
+      })
+      .catch(() => {
+        if (isMounted) setError('No se pudo cargar el catálogo. Intenta de nuevo.');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // ── Filtrado + ordenamiento (client-side) ──────────────────────────────────
+  const filtered = useMemo(() => {
+    let results = [...allCourses];
+
+    // Búsqueda por texto
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      results = results.filter(
+        (c) =>
+          c.title.toLowerCase().includes(q) ||
+          c.shortDescription.toLowerCase().includes(q),
+      );
+    }
+
+    // Categoría
+    if (filters.categories.length > 0) {
+      results = results.filter((c) => filters.categories.includes(c.category));
+    }
+
+    // Modalidad
+    if (filters.modalities.length > 0) {
+      results = results.filter((c) => filters.modalities.includes(c.modality));
+    }
+
+    // Rango de precio
+    const min = filters.priceMin !== '' ? Number(filters.priceMin) : null;
+    const max = filters.priceMax !== '' ? Number(filters.priceMax) : null;
+    if (min !== null) results = results.filter((c) => c.price >= min);
+    if (max !== null) results = results.filter((c) => c.price <= max);
+
+    return applySort(results, sortBy);
+  }, [allCourses, search, filters, sortBy]);
+
+  // ── Paginación ─────────────────────────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Resetear a página 1 cuando cambian los filtros o búsqueda
+  function handleFiltersChange(next: FilterState) {
+    setFilters(next);
+    setPage(1);
+  }
+  function handleSearch(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
+  function handleSort(value: SortOption) {
+    setSortBy(value);
+    setPage(1);
+  }
+  function handleClearFilters() {
+    setFilters(EMPTY_FILTERS);
+    setSearch('');
+    setSortBy('relevance');
+    setPage(1);
+  }
+
+  const hasActiveFilters =
+    search.trim() !== '' ||
+    filters.categories.length > 0 ||
+    filters.modalities.length > 0 ||
+    filters.priceMin !== '' ||
+    filters.priceMax !== '';
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold">Programas</h1>
-      <p className="mt-4 text-muted-foreground">En construccion.</p>
-    </section>
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      {/* Encabezado */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Programas</h1>
+        <p className="mt-2 text-muted-foreground">
+          Explora nuestra oferta académica y encuentra el programa que impulse tu carrera.
+        </p>
+      </div>
+
+      {/* Barra de búsqueda + ordenamiento + botón filtros mobile */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Buscador */}
+        <div className="relative flex-1 sm:max-w-sm">
+          <svg
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+            />
+          </svg>
+          <input
+            id="catalog-search"
+            type="search"
+            placeholder="Buscar por título o descripción…"
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-cee-red"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Ordenamiento */}
+          <select
+            id="catalog-sort"
+            value={sortBy}
+            onChange={(e) => handleSort(e.target.value as SortOption)}
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cee-red"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Botón filtros (solo mobile) */}
+          <Sheet open={isMobileFilterOpen} onOpenChange={setIsMobileFilterOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:border-cee-red hover:text-cee-red md:hidden"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Filtros
+                {hasActiveFilters && (
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-cee-red text-[10px] font-bold text-white">
+                    !
+                  </span>
+                )}
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 overflow-y-auto">
+              <SheetHeader className="mb-4">
+                <SheetTitle>Filtros</SheetTitle>
+              </SheetHeader>
+              <FilterSidebar
+                filters={filters}
+                onChange={(next) => {
+                  handleFiltersChange(next);
+                }}
+                onClear={handleClearFilters}
+              />
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
+      {/* Etiquetas de filtros activos */}
+      {hasActiveFilters && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">Filtros activos:</span>
+          {search.trim() && (
+            <ActiveTag label={`"${search.trim()}"`} onRemove={() => handleSearch('')} />
+          )}
+          {filters.categories.map((cat) => (
+            <ActiveTag
+              key={cat}
+              label={cat}
+              onRemove={() =>
+                handleFiltersChange({
+                  ...filters,
+                  categories: filters.categories.filter((c) => c !== cat),
+                })
+              }
+            />
+          ))}
+          {filters.modalities.map((mod) => (
+            <ActiveTag
+              key={mod}
+              label={mod}
+              onRemove={() =>
+                handleFiltersChange({
+                  ...filters,
+                  modalities: filters.modalities.filter((m) => m !== mod),
+                })
+              }
+            />
+          ))}
+          {(filters.priceMin || filters.priceMax) && (
+            <ActiveTag
+              label={`S/ ${filters.priceMin || '0'} – ${filters.priceMax || '∞'}`}
+              onRemove={() =>
+                handleFiltersChange({ ...filters, priceMin: '', priceMax: '' })
+              }
+            />
+          )}
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            className="text-xs font-medium text-cee-red underline-offset-2 hover:underline"
+          >
+            Limpiar todo
+          </button>
+        </div>
+      )}
+
+      {/* Layout principal: sidebar desktop + grid */}
+      <div className="flex gap-8">
+        {/* Sidebar (solo desktop) */}
+        <div className="hidden w-56 shrink-0 md:block">
+          <FilterSidebar
+            filters={filters}
+            onChange={handleFiltersChange}
+            onClear={handleClearFilters}
+          />
+        </div>
+
+        {/* Contenido */}
+        <div className="min-w-0 flex-1">
+          {isLoading ? (
+            <LoadingGrid />
+          ) : error ? (
+            <p className="py-16 text-center text-sm text-destructive">{error}</p>
+          ) : filtered.length === 0 ? (
+            <EmptyState onClear={handleClearFilters} hasFilters={hasActiveFilters} />
+          ) : (
+            <>
+              <div className="mb-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {paginated.map((course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))}
+              </div>
+              <PaginationControls
+                currentPage={safePage}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-componentes locales ───────────────────────────────────────────────────
+
+function ActiveTag({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Eliminar filtro ${label}`}
+        className="ml-0.5 text-muted-foreground hover:text-foreground"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
+
+function LoadingGrid() {
+  return (
+    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-72 animate-pulse rounded-lg bg-secondary"
+          aria-hidden="true"
+        />
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({
+  onClear,
+  hasFilters,
+}: {
+  onClear: () => void;
+  hasFilters: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <p className="text-lg font-semibold">Sin resultados</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {hasFilters
+          ? 'Ningún programa coincide con los filtros aplicados.'
+          : 'No hay programas disponibles en este momento.'}
+      </p>
+      {hasFilters && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="mt-5 rounded-md bg-cee-red px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+        >
+          Limpiar filtros
+        </button>
+      )}
+    </div>
   );
 }
