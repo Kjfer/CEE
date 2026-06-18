@@ -1,13 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ROUTES } from '@/constants/routes';
-
-const links = [
-  { href: ROUTES.HOME, label: 'Inicio' },
-  { href: ROUTES.CATALOG, label: 'Programas' },
-  { href: ROUTES.MULTIMEDIA, label: 'Multimedia' },
-  { href: ROUTES.ABOUT, label: 'Nosotros' },
-  { href: ROUTES.CONTACT, label: 'Contacto' },
-];
+import { navigationLinks } from '@/config/navigation';
 
 export function Footer() {
   return (
@@ -20,8 +12,8 @@ export function Footer() {
           </p>
         </div>
         <nav className="grid gap-2 text-sm">
-          {links.map((link) => (
-            <Link key={link.href} to={link.href} className="text-neutral-300 hover:text-white">
+          {navigationLinks.map((link) => (
+            <Link key={link.path} to={link.path} className="text-neutral-300 hover:text-white">
               {link.label}
             </Link>
           ))}
