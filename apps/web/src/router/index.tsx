@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
+import { PageLoader } from '@/components/shared/PageLoader';
 import { ROUTES } from '@/constants/routes';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 
@@ -15,9 +16,10 @@ const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
 const DashboardPage = lazy(() => import('@/pages/admin/DashboardPage'));
 const CoursesAdminPage = lazy(() => import('@/pages/admin/CoursesAdminPage'));
 const SalesPage = lazy(() => import('@/pages/admin/SalesPage'));
+const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 
 function withSuspense(element: JSX.Element) {
-  return <Suspense fallback={<div className="p-8">Cargando...</div>}>{element}</Suspense>;
+  return <Suspense fallback={<PageLoader />}>{element}</Suspense>;
 }
 
 export const router = createBrowserRouter([
@@ -40,6 +42,7 @@ export const router = createBrowserRouter([
           { path: ROUTES.ADMIN_SALES, element: withSuspense(<SalesPage />) },
         ],
       },
+      { path: '*', element: withSuspense(<NotFoundPage />) },
     ],
   },
 ]);
