@@ -16,7 +16,7 @@ import { coursesService } from '@/services/courses.service';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 12;
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'newest';
 
