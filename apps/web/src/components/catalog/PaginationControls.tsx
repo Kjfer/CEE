@@ -12,14 +12,9 @@ interface PaginationControlsProps {
 export function PaginationControls({
   currentPage,
   totalPages,
-  totalItems,
-  pageSize,
   onPageChange,
 }: PaginationControlsProps) {
   if (totalPages <= 1) return null;
-
-  const from = (currentPage - 1) * pageSize + 1;
-  const to = Math.min(currentPage * pageSize, totalItems);
 
   /** Genera el array de páginas con "..." donde sea necesario */
   function getPageNumbers(): (number | '...')[] {
@@ -43,20 +38,7 @@ export function PaginationControls({
   const pages = getPageNumbers();
 
   return (
-    <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
-      {/* Contador */}
-      <p className="text-sm text-muted-foreground">
-        Mostrando{' '}
-        <span className="font-medium text-foreground">
-          {from}–{to}
-        </span>{' '}
-        de{' '}
-        <span className="font-medium text-foreground">{totalItems}</span>{' '}
-        resultados
-      </p>
-
-      {/* Controles */}
-      <nav aria-label="Paginación" className="flex items-center gap-1">
+    <nav aria-label="Paginación" className="flex items-center justify-center gap-1">
         <button
           type="button"
           disabled={currentPage === 1}
@@ -112,7 +94,6 @@ export function PaginationControls({
         >
           <ChevronRight className="h-4 w-4" />
         </button>
-      </nav>
-    </div>
+    </nav>
   );
 }

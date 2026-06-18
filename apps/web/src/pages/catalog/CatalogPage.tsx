@@ -16,7 +16,7 @@ import { coursesService } from '@/services/courses.service';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 4;
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'newest';
 
@@ -314,6 +314,16 @@ export default function CatalogPage() {
             <EmptyState onClear={handleClearFilters} hasFilters={hasActiveFilters} />
           ) : (
             <>
+              {/* Contador siempre visible */}
+              <p className="mb-4 text-sm text-muted-foreground">
+                Mostrando{' '}
+                <span className="font-medium text-foreground">
+                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}
+                </span>{' '}
+                de{' '}
+                <span className="font-medium text-foreground">{filtered.length}</span>{' '}
+                resultado{filtered.length !== 1 ? 's' : ''}
+              </p>
               <div className="mb-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {paginated.map((course) => (
                   <CourseCard key={course.id} course={course} />
