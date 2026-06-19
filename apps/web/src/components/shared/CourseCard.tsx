@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { Course } from '@cee/types';
 import { ROUTES } from '@/constants/routes';
 import { formatPrice } from '@/lib/utils';
+import { buildInscripcionUrl } from '@/lib/inscripcion';
 
 interface CourseCardProps {
   course: Course;
@@ -13,7 +14,7 @@ export function CourseCard({ course }: CourseCardProps) {
 
   /** Navega al formulario de contacto/registro con el curso preseleccionado */
   const handleInscribirse = () => {
-    navigate(`${ROUTES.CONTACT}?curso=${course.id}`);
+    navigate(buildInscripcionUrl(course.id));
   };
 
   return (
