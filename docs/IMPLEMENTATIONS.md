@@ -363,6 +363,69 @@ Construir la primera impresión del sitio: Hero, catálogo resumido con filtro p
 
 ---
 
+### ✅ Desarrollador 3 — Detalle de Curso (Frente 3)
+
+**Estado:** Completada
+**Fecha:** 2026-06-18
+
+#### Objetivo
+Construir la página de detalle de curso (`/programas/:slug`): breadcrumb, información completa, perfil del egresado, sílabo en acordeón, plana docente y sidebar de precio/descarga — reemplazando el placeholder de `CoursePage.tsx`.
+
+#### Cambios realizados
+
+##### 1. Instalar `@radix-ui/react-accordion` y crear `apps/web/src/components/ui/accordion.tsx`
+- No existía componente `Accordion` en el proyecto; se generó siguiendo el patrón estándar de shadcn/ui (mismo criterio ya aplicado a `sheet.tsx` en Fase 2: se **crea**, no se edita un archivo generado existente)
+- Exporta `Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent`
+- Se añadieron los keyframes `accordion-down`/`accordion-up` en `apps/web/tailwind.config.ts` (requeridos por `tailwindcss-animate` para la animación de expandir/contraer)
+
+##### 2. Crear `apps/web/src/hooks/useCourseDetail.ts`
+- Hook `useCourseDetail(slug)` con el mismo patrón que `useCourses` (`useState`/`useEffect`), llama `coursesService.getBySlug(slug)`
+- Expone `{ course, isLoading, error }`; `error` se setea si el slug no existe en los fixtures
+
+##### 3. Crear `apps/web/src/components/shared/Breadcrumb.tsx`
+- Componente reutilizable: recibe `items: { label, path? }[]`, renderiza separadores con `ChevronRight` (`lucide-react`); el último item no es link
+
+##### 4. Crear `apps/web/src/components/course/TeacherCard.tsx`
+- Tarjeta con foto, nombre, `title` (especialidad) y `bio` truncada (`line-clamp-3`) a partir de `Instructor` (`@cee/types`) — no se creó un tipo `Teacher` nuevo porque `@cee/types` ya define `Instructor` para esto
+
+##### 5. Crear `apps/web/src/components/course/SyllabusAccordion.tsx`
+- Itera `SyllabusModule[]` (campo `syllabus` ya incluido en `Course`) sobre el nuevo `Accordion`; cada módulo es un `AccordionItem` expandible con su lista de `topics`
+- No se creó `syllabusService` separado: el sílabo ya viene embebido en `Course` desde los fixtures, a diferencia de lo sugerido en el PDF de la Fase 3
+
+##### 6. Crear `apps/web/src/components/course/CourseSidebar.tsx`
+- Precio tachado (`originalPrice`) + precio actual, botón "Descargar sílabo" (`syllabusPdfUrl`, usando `Button` de shadcn), datos de modalidad/duración/nivel/certificación
+- **Decisión de alcance:** el PDF de la Fase 3 pide un botón "Añadir al carrito" en este sidebar. **No se implementó** — el carrito fue eliminado explícitamente del proyecto en la Fase 2 (ver "Eliminación del Carrito de Compras" arriba) y no se reintroduce aquí
+
+##### 7. Reescribir `apps/web/src/pages/course/CoursePage.tsx`
+- Antes: placeholder estático ("En construcción")
+- Después: lee `slug` con `useParams`, usa `useCourseDetail`, compone `Breadcrumb` (Inicio > Programas > [Curso]) + título/categoría/descripción + perfil del egresado + `SyllabusAccordion` + grid de `TeacherCard` + `CourseSidebar`
+- Layout `grid lg:grid-cols-3` (contenido `lg:col-span-2` + sidebar `lg:col-span-1`), mobile-first (apilado por defecto)
+- Estados de carga ("Cargando curso...") y de error ("Curso no encontrado")
+
+#### Archivos nuevos
+- ✅ `apps/web/src/components/ui/accordion.tsx`
+- ✅ `apps/web/src/hooks/useCourseDetail.ts`
+- ✅ `apps/web/src/components/shared/Breadcrumb.tsx`
+- ✅ `apps/web/src/components/course/TeacherCard.tsx`
+- ✅ `apps/web/src/components/course/SyllabusAccordion.tsx`
+- ✅ `apps/web/src/components/course/CourseSidebar.tsx`
+
+#### Archivos modificados
+- ✅ `apps/web/src/pages/course/CoursePage.tsx`
+- ✅ `apps/web/tailwind.config.ts` (keyframes/animation de accordion)
+- ✅ `apps/web/package.json` (nueva dependencia `@radix-ui/react-accordion`)
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ Tipos consumidos exclusivamente desde `@cee/types` (`Course`, `Instructor`, `SyllabusModule`); no se redefinió ningún tipo localmente
+- ✅ No se editó ningún archivo existente de `components/ui/`
+
+#### Desviación del documento de tareas
+- "Añadir al carrito" del PDF de Fase 3 no aplica — el carrito está fuera de alcance del proyecto desde la Fase 2 (decisión explícita del equipo)
+- No se creó `syllabusService` ni tipos `Teacher`/`CourseDetail` separados — el contrato real de `@cee/types` ya resuelve el sílabo y los datos de detalle dentro de `Course`
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones
