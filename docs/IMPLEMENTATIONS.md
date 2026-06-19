@@ -426,7 +426,7 @@ Construir la página de detalle de curso (`/programas/:slug`): breadcrumb, infor
 
 ---
 
-## Fase 4 — Flujo de conversión directo (sin carrito)
+## Fase 4 — Flujo de Conversión Directo (sin carrito)
 
 ### ✅ Santiago — Lógica de selección de curso a inscribir (Tarea 1)
 
@@ -470,6 +470,57 @@ Definir el mecanismo de transporte del curso elegido desde el botón "Inscribirm
 #### Contrato para el resto del equipo
 - **Renato / Diana (botón "Inscribirme"):** `<Link to={buildInscripcionUrl(course.id)}>Inscribirme</Link>` — importar desde `@/lib/inscripcion`
 - **Tom (página de contacto):** `const { course, isLoading } = useCursoSeleccionado();` — importar desde `@/hooks/useCursoSeleccionado`; si `course` no es `null`, mostrar "Te estás inscribiendo a: {course.title}"; si es `null`, formulario de contacto general sin cambios
+
+---
+
+### ✅ Renato — Botón "Inscribirme" en Home y Catálogo (Tarea 2)
+
+**Estado:** Completada  
+**Fecha:** 2026-06-19  
+**Rama:** `feature/fase4-cta-coursecard`
+
+#### Objetivo
+Agregar el CTA de inscripción en las tarjetas de curso (`CourseCard`) que se muestran en los listados de Home y Catálogo, navegando al formulario de contacto/registro con el curso preseleccionado vía query param.
+
+#### Contexto
+- El carrito fue eliminado en Fase 2; el flujo de conversión ahora es directo: **curso → Inscribirme → registro/contacto**
+- Santiago (Tarea 1) ya ha creado e implementado el helper `buildInscripcionUrl` y la lógica base en su rama, por lo que Renato integra directamente usando la URL construida por dicho helper.
+
+#### Cambios realizados
+
+##### 1. `apps/web/src/components/shared/CourseCard.tsx` — modificado
+
+**Nuevo botón "Inscribirme":**
+- Se importó `buildInscripcionUrl` desde `@/lib/inscripcion`
+- Se cambió el botón para navegar a la URL provista por `buildInscripcionUrl(course.id)`
+- Se usa navegación programática (`useNavigate`) o link directo según convenga. Por consistencia de interactividad se mantiene la acción usando `useNavigate` con la URL construida por el helper: `navigate(buildInscripcionUrl(course.id))`.
+
+**Reorganización del layout de botones:**
+- **Antes:** un solo botón "Ver detalles" (primario, fondo guinda)
+- **Después:** dos botones lado a lado con `flex gap-2`, cada uno `flex-1`:
+  - **"Ver detalles"** → estilo secundario/outline (`border-2 border-cee-red text-cee-red`, hover rellena fondo guinda y texto blanco)
+  - **"Inscribirme"** → estilo primario (`bg-cee-red text-white`, hover `bg-cee-red-dark`)
+
+**Mejoras de layout de la card:**
+- `<article>` ahora usa `flex flex-col` para que todas las cards del grid tengan altura uniforme
+- Contenido interno usa `flex flex-1 flex-col` con `mt-auto` en la zona de precio, empujando precio y botones al fondo de la card
+- Se agregó `transition-shadow duration-200 hover:shadow-md` para un hover sutil en la card
+- Se agregaron `transition-colors duration-200` en ambos botones para transiciones suaves
+
+#### Archivos modificados
+- ✅ `apps/web/src/components/shared/CourseCard.tsx`
+
+#### Archivos no modificados (sin cambios necesarios)
+- `apps/web/src/pages/home/HomePage.tsx` — ya usa `<CourseCard />`, los cambios se reflejan automáticamente
+- `apps/web/src/pages/catalog/CatalogPage.tsx` — ya usa `<CourseCard />`, los cambios se reflejan automáticamente
+- `apps/web/src/constants/routes.ts` — ya tiene `CONTACT: '/contacto'`, no se necesitó agregar ruta nueva
+
+#### Verificación
+- ✅ `pnpm --filter web build` exitoso, cero errores TypeScript
+- ✅ El botón "Inscribirme" aparece en todas las `CourseCard` (Home: 6 cards destacadas, Catálogo: cards paginadas + filtradas/buscadas)
+- ✅ Tipos consumidos desde `@cee/types` (`Course`); no se redefinió nada localmente
+- ✅ No se editó ningún archivo de `components/ui/` (shadcn)
+- ✅ Solo se usó `pnpm`
 
 ---
 
