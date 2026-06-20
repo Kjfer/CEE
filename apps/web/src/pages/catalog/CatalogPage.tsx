@@ -201,7 +201,7 @@ export default function CatalogPage() {
             placeholder="Buscar por título o descripción…"
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-cee-red"
+            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-cee-red focus:border-cee-red"
           />
         </div>
 
@@ -211,7 +211,7 @@ export default function CatalogPage() {
             id="catalog-sort"
             value={sortBy}
             onChange={(e) => handleSort(e.target.value as SortOption)}
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cee-red"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-cee-red focus:border-cee-red"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>

@@ -1,6 +1,6 @@
 export default function AccessDeniedPage() {
   return (
-    <main className="grid min-h-screen place-items-center bg-cee-cream px-4 text-center">
+    <main className="grid min-h-screen place-items-center bg-cee-gray/10 px-4 text-center">
       <section>
         <p className="text-sm font-semibold uppercase tracking-wide text-cee-red">CEE Admin</p>
         <h1 className="mt-3 text-3xl font-bold text-neutral-950">Acceso denegado</h1>

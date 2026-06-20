@@ -143,7 +143,7 @@ export function FilterSidebar({
             placeholder="Mín"
             value={draft.priceMin}
             onChange={(e) => onDraftChange({ ...draft, priceMin: e.target.value })}
-            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-cee-red"
+            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-cee-red focus:border-cee-red"
           />
           <span className="shrink-0 text-muted-foreground">—</span>
           <input
@@ -152,7 +152,7 @@ export function FilterSidebar({
             placeholder="Máx"
             value={draft.priceMax}
             onChange={(e) => onDraftChange({ ...draft, priceMax: e.target.value })}
-            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-cee-red"
+            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-cee-red focus:border-cee-red"
           />
         </div>
       </section>

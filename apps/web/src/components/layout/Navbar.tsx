@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { authService } from '@/services/auth.service';
 import { cn } from '@/lib/utils';
+import logoMark from '@/assets/icons/logo2.png';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,10 +24,10 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-border bg-background">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link to={ROUTES.HOME} className="text-xl font-bold text-cee-red">
-          CEE-FIIS
+        <Link to={ROUTES.HOME} className="flex items-center gap-2">
+          <img src={logoMark} alt="CEE-FIIS" className="h-10 w-auto" />
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
