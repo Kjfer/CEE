@@ -654,6 +654,69 @@ Se evaluaron 2 opciones:
 
 ---
 
+### ✅ Diana — Dashboard (Tarea 2)
+
+**Estado:** Completada
+**Fecha:** 2026-06-20
+**Rama:** `fase5-dashboard`
+
+#### Objetivo
+Construir el `DashboardPage` del panel admin: saludo + fecha, 4 tarjetas de KPIs, accesos directos a Cursos/Ventas y un mini-resumen de actividad reciente — todo alimentado por un `dashboardService` mock, no hardcodeado en el componente.
+
+#### Decisión: agregar `DashboardSummary`/`DashboardActivityItem` a `@cee/types` en vez de un tipo local en `apps/admin`
+El doc de la tarea pide un fixture con "los números de los KPIs y la actividad reciente", pero no dice dónde vive el tipo. Se siguió el precedente ya existente en el propio `@cee/types` para el caso análogo de Ventas (`SalesKpis`/`SalesReport`/`CourseSalesBreakdown`, ya usados por la tarea de Renato): son datos agregados que en algún momento (Fase 6) vendrán de un endpoint real del backend, así que cuentan como contrato FE/BE, no como un view-model interno de `apps/admin`. Definir `DashboardSummary` localmente en `apps/admin` habría roto la regla del repo ("todos los tipos compartidos se importan de `@cee/types`; nunca se redefinen localmente") en el momento en que `apps/web` o el backend necesiten ese mismo contrato.
+
+**Forma elegida (mismo patrón que `SalesKpis`):** cada métrica es `valor` + `valorDeltaPct` (ej. `publishedCourses` + `publishedCoursesDeltaPct`), en vez de un objeto `trend` separado — consistencia con el resto de `@cee/types`.
+
+#### Cambios realizados
+
+##### 1. `packages/types/src/index.ts` — agregado
+- `DashboardSummary` (`publishedCourses`, `draftCourses`, `monthlySales`, `registeredUsers`, cada uno con su `*DeltaPct`, + `recentActivity: DashboardActivityItem[]`)
+- `DashboardActivityItem` (`id`, `courseTitle`, `action: 'created' | 'updated'`, `author`, `date`)
+
+##### 2. Crear `apps/admin/src/components/ui/card.tsx`
+- No existía `Card` en `apps/admin` (solo `button.tsx`); se copió tal cual el patrón de `apps/web/src/components/ui/card.tsx` (mismo criterio de siempre: se **crea**, no se edita un archivo shadcn existente)
+
+##### 3. Crear `apps/admin/src/mocks/dashboard.ts`
+- `mockDashboardSummary: DashboardSummary` con los 4 KPIs y 5 actividades recientes (mezcla de `created`/`updated`, distintos autores del equipo, fechas ISO)
+
+##### 4. Crear `apps/admin/src/services/dashboardService.ts`
+- `getSummary()`: devuelve el mock con un `delay` simulado (mismo patrón que los services de `apps/web`)
+- Sin rama mock/real (`VITE_USE_MOCKS`) como en `apps/web` — fuera de alcance de Fase 5 ("Todo trabaja sobre mocks"); esa rama se agrega cuando exista el backend real en Fase 6
+
+##### 5. Crear `apps/admin/src/hooks/useDashboard.ts`
+- Hook `useState`/`useEffect` que envuelve `dashboardService.getSummary()`, expone `{ summary, isLoading }` — para que `DashboardPage` no llame al service directo ni hardcodee datos
+
+##### 6. Crear `apps/admin/src/components/dashboard/SummaryCard.tsx`
+- Props `{ icon: LucideIcon, label, value, trend }`, reutilizable para las 4 tarjetas
+- Trend en verde (`text-emerald-600`) si es positivo, en rojo (`text-destructive`) si es negativo, con signo `+`/`-` explícito
+
+##### 7. Reescribir `apps/admin/src/pages/DashboardPage.tsx`
+- Saludo con `user?.name` desde `authStore` + fecha actual formateada con `Intl.DateTimeFormat('es-PE', ...)` (dinámica, no hardcodeada)
+- Grid de 4 `SummaryCard` (`sm:grid-cols-2 lg:grid-cols-4`)
+- 2 accesos directos como tarjetas-link grandes: "Gestionar Cursos" → `/cursos` (estilo primario, fondo guinda), "Ver Ventas" → `/ventas` (estilo outline)
+- Mini-resumen de actividad reciente dentro de un `Card`, iterando `summary.recentActivity`
+- Estado de carga simple mientras `isLoading`
+
+#### Archivos nuevos
+- ✅ `apps/admin/src/components/ui/card.tsx`
+- ✅ `apps/admin/src/mocks/dashboard.ts`
+- ✅ `apps/admin/src/services/dashboardService.ts`
+- ✅ `apps/admin/src/hooks/useDashboard.ts`
+- ✅ `apps/admin/src/components/dashboard/SummaryCard.tsx`
+
+#### Archivos modificados
+- ✅ `packages/types/src/index.ts` (`DashboardSummary`, `DashboardActivityItem`)
+- ✅ `apps/admin/src/pages/DashboardPage.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter admin lint` y `pnpm --filter web lint` (`tsc --noEmit`): ambos sin errores (el cambio en `@cee/types` no rompe nada en `apps/web`)
+- ✅ `curl` contra `/` del dev server de `apps/admin` responde `200`
+- ✅ Datos vienen de `dashboardService` vía `useDashboard`, no hardcodeados en `DashboardPage.tsx`
+- ✅ No se editó ningún archivo existente de `components/ui/`
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones
