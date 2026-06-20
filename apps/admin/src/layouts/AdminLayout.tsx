@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { BookOpen, LayoutDashboard, LineChart, LogOut, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Toaster } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 
@@ -102,6 +103,8 @@ export function AdminLayout() {
           <Outlet />
         </main>
       </div>
+
+      <Toaster />
     </div>
   );
 }
