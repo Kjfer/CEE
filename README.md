@@ -23,7 +23,15 @@ Plataforma web institucional para el Centro de Especializacion Ejecutiva (CEE-FI
 ## Comandos
 
 ```bash
+# 1. Instalar dependencias
 pnpm install
+
+# 2. Configurar variables de entorno (habilitar mocks)
+# En Windows (PowerShell):
+cp apps/web/.env.example apps/web/.env
+# En Mac/Linux:
+# cp apps/web/.env.example apps/web/.env
+
+# 3. Iniciar el servidor
 pnpm dev
-pnpm build
 ```

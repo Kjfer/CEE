@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react';
-import type { Course } from '@cee/types';
+import type { Course, CourseCategory } from '@cee/types';
 import { coursesService } from '@/services/courses.service';
 
-export function useCourses() {
+interface UseCoursesOptions {
+  category?: CourseCategory | 'Todas';
+}
+
+export function useCourses(options?: UseCoursesOptions) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const category = options?.category;
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoading(true);
 
     coursesService
-      .getAll()
+      .getAll(category && category !== 'Todas' ? { category } : undefined)
       .then((response) => {
         if (isMounted) {
           setCourses(response.data);
@@ -25,7 +31,7 @@ export function useCourses() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [category]);
 
   return { courses, isLoading };
 }
