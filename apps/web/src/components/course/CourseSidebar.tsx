@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom';
 import type { Course } from '@cee/types';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { buildInscripcionUrl } from '@/lib/inscripcion';
 import { formatPrice } from '@/lib/utils';
 
 interface CourseSidebarProps {
@@ -18,6 +20,10 @@ export function CourseSidebar({ course }: CourseSidebarProps) {
         ) : null}
         <p className="text-3xl font-bold text-cee-red">{formatPrice(course.price)}</p>
       </div>
+
+      <Button asChild className="w-full">
+        <Link to={buildInscripcionUrl(course.id)}>Inscribirme</Link>
+      </Button>
 
       <Button asChild variant="outline" className="w-full">
         <a href={course.syllabusPdfUrl} download>

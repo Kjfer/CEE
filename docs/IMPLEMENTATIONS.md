@@ -524,6 +524,37 @@ Agregar el CTA de inscripción en las tarjetas de curso (`CourseCard`) que se mu
 
 ---
 
+### ✅ Diana — Botón "Inscribirme" en Detalle de Curso (Tarea 3)
+
+**Estado:** Completada
+**Fecha:** 2026-06-19
+**Rama:** `feature/fase4-inscripcion-detalle-curso`
+
+#### Objetivo
+Agregar el CTA principal de inscripción en el sidebar de la página de Detalle de curso (`CourseSidebar`, creado en Fase 3), navegando al formulario de contacto/registro con el curso ya identificado.
+
+#### Contexto
+- Se hizo `git merge origin/dev` antes de tocar el componente, para traer el mecanismo de Santiago (`buildInscripcionUrl`, `useCursoSeleccionado`, `coursesService.getById`) y la integración ya hecha por Renato (`CourseCard`) y Tom (`ContactPage`)
+- El sidebar de Detalle de curso **nunca tuvo botón de carrito** (se construyó en Fase 3 ya sin ese concepto), por lo que no hubo nada que "reemplazar" — se trató de agregar el nuevo CTA
+
+#### Cambios realizados
+
+##### 1. `apps/web/src/components/course/CourseSidebar.tsx` — modificado
+- Se importó `buildInscripcionUrl` desde `@/lib/inscripcion` y `Link` de `react-router-dom`
+- Se agregó un botón **"Inscribirme"** (`Button asChild` envolviendo `<Link to={buildInscripcionUrl(course.id)}>`) como CTA principal (estilo `default` de shadcn, fondo guinda), ubicado entre el precio y el botón "Descargar sílabo"
+- El botón "Descargar sílabo" se mantiene sin cambios (sigue usando `variant="outline"`)
+
+#### Archivos modificados
+- ✅ `apps/web/src/components/course/CourseSidebar.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ "Inscribirme" usa el mismo helper (`buildInscripcionUrl`) que `CourseCard.tsx`, generando exactamente la misma URL (`/contacto?curso=<id>`) que ya resuelve `useCursoSeleccionado` en `ContactPage.tsx`
+- ✅ No se editó ningún archivo de `components/ui/` (shadcn)
+- ✅ Se mantiene el botón "Descargar sílabo" intacto, según el alcance de la tarea
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones
