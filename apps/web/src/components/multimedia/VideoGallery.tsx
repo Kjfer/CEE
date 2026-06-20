@@ -19,7 +19,7 @@ export function VideoGallery({ videos }: VideoGalleryProps) {
         {videos.map((video) => (
           <article
             key={video.id}
-            className="group cursor-pointer overflow-hidden rounded-lg border border-border bg-card transition hover:shadow-lg"
+            className="group cursor-pointer overflow-hidden rounded-lg border border-border bg-card transition hover:-translate-y-0.5 hover:border-cee-red/40"
             onClick={() => setSelectedVideo(video)}
           >
             <div className="relative h-48 w-full overflow-hidden bg-muted">

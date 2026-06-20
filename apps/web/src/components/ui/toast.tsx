@@ -3,15 +3,21 @@ import { useToastStore, type ToastVariant } from '@/store/toastStore';
 import { cn } from '@/lib/utils';
 
 const variantStyles: Record<ToastVariant, string> = {
-  success: 'border-green-600/30 bg-green-50 text-green-900',
-  error: 'border-destructive/30 bg-red-50 text-red-900',
-  info: 'border-border bg-card text-card-foreground',
+  success: 'border-l-4 border-l-cee-red border-y border-r border-border bg-background text-foreground',
+  error: 'border-l-4 border-l-foreground border-y border-r border-border bg-background text-foreground',
+  info: 'border-l-4 border-l-cee-gray border-y border-r border-border bg-background text-foreground',
 };
 
 const variantIcons: Record<ToastVariant, typeof Info> = {
   success: CheckCircle2,
   error: XCircle,
   info: Info,
+};
+
+const variantIconStyles: Record<ToastVariant, string> = {
+  success: 'text-cee-red',
+  error: 'text-foreground',
+  info: 'text-cee-gray',
 };
 
 export function Toaster() {
@@ -35,7 +41,7 @@ export function Toaster() {
               variantStyles[item.variant],
             )}
           >
-            <Icon className="mt-0.5 h-5 w-5 shrink-0" />
+            <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', variantIconStyles[item.variant])} />
             <div className="flex-1">
               <p className="text-sm font-semibold">{item.title}</p>
               {item.description && <p className="mt-1 text-sm opacity-90">{item.description}</p>}

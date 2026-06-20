@@ -13,6 +13,7 @@ import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { authService } from '@/services/auth.service';
+import logoFull from '@/assets/icons/logo1.png';
 
 interface MobileMenuProps {
   open: boolean;
@@ -35,7 +36,9 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent side="left" className="flex w-3/4 flex-col gap-6 sm:max-w-xs">
         <SheetHeader>
-          <SheetTitle className="text-cee-red">CEE-FIIS</SheetTitle>
+          <SheetTitle asChild>
+            <img src={logoFull} alt="CEE-FIIS" className="h-16 w-auto" />
+          </SheetTitle>
         </SheetHeader>
 
         <nav className="flex flex-col gap-1" aria-label="Navegacion principal movil">

@@ -41,10 +41,15 @@ const config = {
           foreground: 'hsl(var(--popover-foreground))',
         },
         cee: {
-          red: '#8B1A1A',
-          'red-dark': '#6B1212',
-          cream: '#F5F0E8',
+          red: '#682222',
+          'red-dark': '#4F1A1A',
+          'red-light': '#8C3A3A',
+          gray: '#A9A9A9',
+          ink: '#000000',
         },
+      },
+      fontFamily: {
+        sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

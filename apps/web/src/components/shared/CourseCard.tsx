@@ -18,7 +18,7 @@ export function CourseCard({ course }: CourseCardProps) {
   };
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow duration-200 hover:shadow-md">
+    <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-shadow duration-200 hover:shadow-md">
       <img
         src={course.imageUrl ?? '/placeholder-course.jpg'}
         alt={course.title}
@@ -26,7 +26,7 @@ export function CourseCard({ course }: CourseCardProps) {
         loading="lazy"
       />
       <div className="flex flex-1 flex-col gap-3 p-5">
-        <span className="w-fit rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase text-cee-red">
+        <span className="w-fit rounded-full border border-cee-red/30 bg-transparent px-3 py-1 text-xs font-semibold uppercase text-cee-red">
           {course.category}
         </span>
         <Link to={courseUrl} className="text-lg font-semibold hover:text-cee-red">

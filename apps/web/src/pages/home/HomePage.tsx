@@ -15,7 +15,7 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="bg-gradient-to-br from-cee-red to-cee-red-dark text-white">
+      <section className="border-b-4 border-cee-gray bg-cee-red text-white">
         <div className="mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
           <h1 className="text-3xl font-extrabold leading-tight sm:text-5xl">
             Especialízate con el Centro de Especialización Ejecutiva

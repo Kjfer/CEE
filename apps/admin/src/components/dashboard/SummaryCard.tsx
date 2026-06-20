@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -20,10 +20,11 @@ export function SummaryCard({ icon: Icon, label, value, trend }: SummaryCardProp
           <p className="mt-2 text-3xl font-bold">{value}</p>
           <p
             className={cn(
-              'mt-1 text-sm font-medium',
-              isPositive ? 'text-emerald-600' : 'text-destructive',
+              'mt-1 flex items-center gap-1 text-sm font-medium',
+              isPositive ? 'text-cee-red' : 'text-muted-foreground',
             )}
           >
+            {isPositive ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
             {isPositive ? '+' : ''}
             {trend}% vs. mes anterior
           </p>

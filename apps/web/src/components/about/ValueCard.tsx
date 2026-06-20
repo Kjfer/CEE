@@ -8,7 +8,7 @@ interface ValueCardProps {
 
 export function ValueCard({ icon: Icon, title, description }: ValueCardProps) {
   return (
-    <div className="rounded-lg border border-border bg-card p-6 text-center transition hover:shadow-lg">
+    <div className="rounded-lg border border-border bg-card p-6 text-center transition hover:-translate-y-0.5 hover:border-cee-red/40">
       <div className="mb-4 flex justify-center">
         <div className="rounded-full bg-cee-red/10 p-3">
           <Icon className="h-6 w-6 text-cee-red" />
