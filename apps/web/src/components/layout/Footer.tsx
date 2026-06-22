@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Youtube } from 'lucide-react';
 import { navigationLinks } from '@/config/navigation';
 import { CONTACT_INFO } from '@/constants/contact.constants';
+import { InstitutionalLogos } from '@/components/shared/InstitutionalLogos';
 
 const socialLinks = [
   { label: 'Facebook', href: 'https://facebook.com', icon: Facebook },
   { label: 'Instagram', href: 'https://instagram.com', icon: Instagram },
   { label: 'LinkedIn', href: 'https://linkedin.com', icon: Linkedin },
+  { label: 'YouTube', href: 'https://youtube.com', icon: Youtube },
 ];
 
 export function Footer() {
@@ -14,7 +16,7 @@ export function Footer() {
     <footer className="bg-cee-red text-white">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-4 lg:px-8">
         <div className="md:col-span-1">
-          <p className="text-lg font-bold">Centro de Especialización Ejecutiva</p>
+          <p className="logo-wordmark text-lg font-bold">Centro de Especialización Ejecutiva</p>
           <p className="mt-3 text-sm text-white/80">
             Formando líderes y profesionales a través de educación ejecutiva de primer nivel.
           </p>
@@ -62,6 +64,13 @@ export function Footer() {
               </a>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="border-t border-white/15">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <p className="mb-3 text-xs uppercase tracking-wide text-white/60">Con el respaldo de</p>
+          <InstitutionalLogos variant="mono" />
         </div>
       </div>
 
