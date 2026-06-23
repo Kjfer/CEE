@@ -336,10 +336,7 @@ export default function CourseFormPage() {
         </div>
 
         <div className="flex gap-3">
-          <Button
-            type="submit"
-            disabled={isSubmitting || Object.keys(errors).length > 0}
-          >
+          <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Guardando...' : 'Guardar curso'}
           </Button>
           <Button asChild type="button" variant="outline">
