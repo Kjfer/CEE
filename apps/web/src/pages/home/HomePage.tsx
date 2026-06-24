@@ -4,10 +4,11 @@ import { gsap } from 'gsap';
 import type { CourseCategory } from '@cee/types';
 import { CourseCard } from '@/components/shared/CourseCard';
 import { CourseFilter } from '@/components/shared/CourseFilter';
+import { EventSlider } from '@/components/home/EventSlider';
 import { Button } from '@/components/ui/button';
-import { InstitutionalLogos } from '@/components/shared/InstitutionalLogos';
 import { ROUTES } from '@/constants/routes';
 import { useCourses } from '@/hooks/useCourses';
+import { useEvents } from '@/hooks/useEvents';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const FEATURED_COUNT = 6;
@@ -15,6 +16,7 @@ const FEATURED_COUNT = 6;
 export default function HomePage() {
   const [category, setCategory] = useState<CourseCategory | 'Todas'>('Todas');
   const { courses, isLoading } = useCourses({ category });
+  const { events } = useEvents();
   const heroRef = useRef<HTMLDivElement>(null);
   const coursesGridRef = useScrollReveal<HTMLDivElement>({ selector: ':scope > *' });
 
@@ -65,13 +67,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-b border-border bg-muted/50">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-6 sm:flex-row sm:justify-between sm:px-6 lg:px-8">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            Con el respaldo de
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-6 flex flex-col gap-1 sm:mb-8">
+          <p className="text-xs font-medium uppercase tracking-widest text-cee-red">
+            Agenda CEE
           </p>
-          <InstitutionalLogos variant="color" />
+          <h2 className="text-2xl sm:text-3xl">Próximos eventos</h2>
         </div>
+        <EventSlider events={events} />
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
