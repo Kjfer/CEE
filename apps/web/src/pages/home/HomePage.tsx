@@ -4,10 +4,12 @@ import { gsap } from 'gsap';
 import type { CourseCategory } from '@cee/types';
 import { CourseCard } from '@/components/shared/CourseCard';
 import { CourseFilter } from '@/components/shared/CourseFilter';
+import { EventSlider } from '@/components/home/EventSlider';
 import { Button } from '@/components/ui/button';
 import { InstitutionalLogos } from '@/components/shared/InstitutionalLogos';
 import { ROUTES } from '@/constants/routes';
 import { useCourses } from '@/hooks/useCourses';
+import { useEvents } from '@/hooks/useEvents';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const FEATURED_COUNT = 6;
@@ -15,6 +17,7 @@ const FEATURED_COUNT = 6;
 export default function HomePage() {
   const [category, setCategory] = useState<CourseCategory | 'Todas'>('Todas');
   const { courses, isLoading } = useCourses({ category });
+  const { events } = useEvents();
   const heroRef = useRef<HTMLDivElement>(null);
   const coursesGridRef = useScrollReveal<HTMLDivElement>({ selector: ':scope > *' });
 
@@ -63,6 +66,13 @@ export default function HomePage() {
             </Button>
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-2xl">Próximos eventos</h2>
+        </div>
+        <EventSlider events={events} />
       </section>
 
       <section className="border-b border-border bg-muted/50">
