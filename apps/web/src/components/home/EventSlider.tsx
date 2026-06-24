@@ -22,9 +22,10 @@ const dateFormatter = new Intl.DateTimeFormat('es-PE', {
 
 interface EventSliderProps {
   events: EventSlide[];
+  isLoading?: boolean;
 }
 
-export function EventSlider({ events }: EventSliderProps) {
+export function EventSlider({ events, isLoading = false }: EventSliderProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const prefersReducedMotion =
@@ -36,6 +37,15 @@ export function EventSlider({ events }: EventSliderProps) {
     setCurrent(api.selectedScrollSnap());
     api.on('select', () => setCurrent(api.selectedScrollSnap()));
   }, [api]);
+
+  if (isLoading) {
+    return (
+      <div
+        aria-hidden="true"
+        className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-secondary sm:aspect-[16/9] sm:rounded-3xl lg:aspect-[21/9]"
+      />
+    );
+  }
 
   if (events.length === 0) return null;
 

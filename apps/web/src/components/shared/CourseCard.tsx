@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import type { Course } from '@cee/types';
+import { CourseCountdown } from '@/components/shared/CourseCountdown';
 import { ROUTES } from '@/constants/routes';
 import { formatPrice } from '@/lib/utils';
 import { buildInscripcionUrl } from '@/lib/inscripcion';
@@ -46,6 +47,8 @@ export function CourseCard({ course }: CourseCardProps) {
           <span>{course.academicHours} horas</span>
           <span>{course.enrolledCount ?? 0} inscritos</span>
         </div>
+
+        <CourseCountdown course={course} />
 
         {/* Precio + botones — empujados al fondo de la card */}
         <div className="mt-auto flex items-center justify-between">

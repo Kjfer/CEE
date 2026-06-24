@@ -1055,6 +1055,584 @@ El carrito y la compra dentro del sitio fueron eliminados en Fase 2/4 (ver entra
 
 ---
 
+### ✅ Sección "Nosotros" + Blog en la Home (Tarea 4 del documento de mejoras)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `feat/about-section`
+
+#### Objetivo
+Agregar una sección "Nosotros" inline en la Home (misión, vínculo UNI/FIIS, propuesta de valor, foto institucional) y un sistema de Blog completo: tipo en `@cee/types`, mock, listado `/blog`, detalle `/blog/:slug`, y una sección en la Home con las 3 entradas más recientes + "Ver todo el blog".
+
+#### Estado previo (verificado antes de implementar)
+Ya existía `AboutPage.tsx` como página independiente en `/nosotros` (con misión/visión, historia, valores, logos institucionales), pero **no había ninguna sección "Nosotros" embebida en la Home**, y el sistema de Blog **no existía en absoluto** (sin tipo, mock, service, hook, páginas ni rutas).
+
+#### Decisión: `BlogPost` en `@cee/types`, en inglés, igual criterio que `EventSlide`
+El documento de mejoras sugiere el shape `{ id, titulo, resumen, imagen, fecha, slug }` en español, pero siguiendo el precedente de `EventSlide` (Tarea 1: campos en camelCase en inglés porque es una entidad que eventualmente vivirá en una tabla real de Supabase, no un input de UI efímero), se definió `BlogPost { id, title, summary, content, imageUrl, date, slug }`. Se agregó `content` (no pedido explícitamente en el documento) porque sin él la página de detalle (`/blog/:slug`) no tendría cuerpo de artículo que mostrar.
+
+#### Decisión: no se reescribió `AboutPage.tsx`, se creó `AboutSection.tsx` como pieza nueva y más compacta para la Home
+La página `/nosotros` ya cumple su propio objetivo (extenso, con valores y estadísticas) y no se tocó. Para la Home se creó un componente nuevo, deliberadamente más corto, con el lenguaje de marca pedido ("Impulsa tu carrera, lidera tu futuro") y un CTA "Conocer más sobre el CEE" que enlaza a `/nosotros` — evita duplicar contenido extenso dos veces en la misma navegación (Home → scroll a Nosotros → click → página completa de Nosotros).
+
+#### Cambios realizados
+
+##### 1. `packages/types/src/index.ts` — agregado `BlogPost`
+- `{ id, title, summary, content, imageUrl, date, slug }`
+
+##### 2. `apps/web/src/mocks/data/blog.mock.ts` (nuevo)
+- `mockBlogPosts`: 4 entradas de ejemplo (liderazgo, transformación digital en gestión pública, testimonios de egresados, analítica de datos), exportado desde `mocks/index.ts`
+
+##### 3. `apps/web/src/services/blog.service.ts` (nuevo)
+- `blogService.getAll()` / `getBySlug(slug)`, mismo patrón mock/Supabase que `events.service.ts` (toggle por `VITE_USE_MOCKS`; rama real apunta a una futura tabla `blog_posts`); `getAll()` ordena por fecha descendente
+
+##### 4. `apps/web/src/hooks/useBlog.ts` y `useBlogPost.ts` (nuevos)
+- Mismo patrón `useState`/`useEffect` que `useEvents`/`useCourseDetail`; `useBlogPost` resuelve por `slug` y expone `error` si no existe
+
+##### 5. `apps/web/src/components/blog/BlogCard.tsx` (nuevo)
+- Tarjeta reutilizada tanto en `BlogPage` (listado completo) como en `BlogSection` (Home): imagen lazy, fecha formateada (`Intl.DateTimeFormat('es-PE', ...)`), resumen truncado (`line-clamp-3`), link "Leer más"
+
+##### 6. `apps/web/src/pages/blog/BlogPage.tsx` y `BlogPostPage.tsx` (nuevos)
+- `BlogPage`: grid de todas las entradas (`useBlog`), con `Breadcrumb` y estados de carga/vacío
+- `BlogPostPage`: detalle por `slug` (`useParams` + `useBlogPost`), `Breadcrumb` de 3 niveles (Inicio > Blog > [Título]), imagen + cuerpo del artículo; estado de error si el slug no resuelve
+
+##### 7. `apps/web/src/constants/routes.ts` y `router/index.tsx` — agregadas rutas
+- `ROUTES.BLOG = '/blog'`, `ROUTES.BLOG_POST = '/blog/:slug'`; ambas con `lazy()` + `Suspense`, mismo patrón que el resto de rutas públicas
+
+##### 8. `apps/web/src/config/navigation.ts` — agregado link "Blog"
+- Entre "Programas" y "Multimedia" en `navigationLinks` (única fuente de verdad consumida por Navbar/Footer/MobileMenu, sin duplicar la lista)
+
+##### 9. `apps/web/src/components/home/AboutSection.tsx` (nuevo)
+- Misión + vínculo FIIS-UNI + lenguaje de marca ("Impulsa tu carrera, lidera tu futuro") + foto institucional (mismo recurso visual que `AboutPage.tsx`) + CTA a `/nosotros`
+
+##### 10. `apps/web/src/components/home/BlogSection.tsx` (nuevo)
+- Las 3 entradas más recientes (`useBlog().posts.slice(0, 3)`) + botón "Ver todo el blog" → `/blog`
+
+##### 11. `apps/web/src/pages/home/HomePage.tsx` — integración con el scroll-snap (Tarea 2)
+- Dos nuevas `<section>` al final, con `id="nosotros"`/`id="blog"` y clase `snap-section` (mismo patrón ya establecido en la Tarea 2), renderizando `<AboutSection />` y `<BlogSection />` respectivamente
+- `SECTION_ANCHORS` extendido con `{ id: 'nosotros', label: 'Nosotros' }` y `{ id: 'blog', label: 'Blog' }` — los dots laterales ahora reflejan las 5 secciones
+
+#### Alcance respetado
+El orden final de secciones (Hero→Cursos→Programas→Nosotros→Blog→Contacto/CTA, Tarea 9 del documento de mejoras) **no se aplicó aquí** — esta tarea solo agrega "Nosotros" y "Blog" al final del orden actual (Hero→Eventos→Programas→Nosotros→Blog), sin reordenar las secciones existentes. La reordenación completa y el CTA de cierre son alcance de la Tarea 9.
+
+#### Archivos nuevos
+- ✅ `apps/web/src/mocks/data/blog.mock.ts`
+- ✅ `apps/web/src/services/blog.service.ts`
+- ✅ `apps/web/src/hooks/useBlog.ts`
+- ✅ `apps/web/src/hooks/useBlogPost.ts`
+- ✅ `apps/web/src/components/blog/BlogCard.tsx`
+- ✅ `apps/web/src/pages/blog/BlogPage.tsx`
+- ✅ `apps/web/src/pages/blog/BlogPostPage.tsx`
+- ✅ `apps/web/src/components/home/AboutSection.tsx`
+- ✅ `apps/web/src/components/home/BlogSection.tsx`
+
+#### Archivos modificados
+- ✅ `packages/types/src/index.ts` (`BlogPost`)
+- ✅ `apps/web/src/mocks/index.ts`
+- ✅ `apps/web/src/constants/routes.ts` (`BLOG`, `BLOG_POST`)
+- ✅ `apps/web/src/router/index.tsx`
+- ✅ `apps/web/src/config/navigation.ts`
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web build` y `pnpm --filter admin build`: ambos sin errores (el cambio en `@cee/types` no rompe `apps/admin`)
+- ✅ Las 5 secciones de la Home (`hero`, `eventos`, `programas`, `nosotros`, `blog`) tienen `id` único, clase `snap-section`, y aparecen en `SECTION_ANCHORS`
+- ✅ `BlogSection` muestra como máximo 3 entradas, ordenadas por fecha descendente, con link a `/blog`
+- ⚠️ Sin navegador real disponible en este entorno para verificación visual; se recomienda revisar manualmente el scroll-snap con las 2 secciones nuevas y la navegación `/blog` → `/blog/:slug` antes de cerrar la tarea del todo
+
+---
+
+### ✅ Escala tipográfica más grande y fluida (Tarea 5 del documento de mejoras)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `style/typography-scale-up`
+
+#### Objetivo
+Subir la escala tipográfica base (~10–15%) de forma fluida con `clamp()`, reescalar la jerarquía `h1`...`h6` proporcionalmente, y verificar que no se rompan layouts existentes (overflow en tarjetas/botones).
+
+#### Estado previo (verificado antes de implementar)
+`tailwind.config.ts` no tenía `theme.fontSize` extendido (usaba los defaults de Tailwind: body en 16px/`1rem`). `index.css` solo definía tamaños fijos para `h1`/`h2`/`h3` (sin `h4`/`h5`/`h6`), y únicamente `h1` usaba `clamp()` — `h2`/`h3` eran valores estáticos sin fluidez.
+
+#### Decisión: subir el `font-size` del `html` con `clamp()` en vez de tocar `body` o cada componente
+Como casi todo el sitio usa unidades `rem` (clases de Tailwind, `h-16` del Navbar, `scroll-padding-top` del snap-container, etc.), subir el tamaño raíz del documento escala el sitio completo de forma proporcional sin necesidad de tocar componente por componente. Se eligió `clamp(16px, 15.5px + 0.2vw, 18px)`: en viewports pequeños se queda en 16px (no se fuerza el aumento en pantallas donde el espacio es más escaso), y crece hasta 18px en desktop — el rango pedido explícitamente en el documento de mejoras ("body de 16→17/18px").
+
+#### Decisión: `theme.fontSize` extendido con `clamp()` en cada paso de la escala (no solo headings)
+Se reescribió la escala completa de Tailwind (`xs` a `6xl`) con `clamp(min, valor-en-rem + vw, max)` en vez de solo aumentar `h1`-`h3` en `index.css`. Esto cubre también el texto que usa utilidades (`text-sm`, `text-lg`, etc.) directamente en componentes (botones, badges, CourseCard), no solo los headings semánticos.
+
+#### Cambios realizados
+
+##### 1. `apps/web/tailwind.config.ts` — agregado `theme.extend.fontSize`
+- Escala `xs`...`6xl`, cada paso con `clamp()` (~10–15% más grande que el default de Tailwind) y `lineHeight` ajustado para legibilidad
+
+##### 2. `apps/web/src/index.css` — jerarquía `h1`...`h6` reescrita
+- Las 6 etiquetas ahora usan `clamp()` (antes solo `h1` era fluida; `h2`/`h3` eran fijas y no existían `h4`/`h5`/`h6`)
+- `line-height` decreciente a medida que el tamaño aumenta (1.05 en `h1` grande, 1.5 en `h5`/`h6`) y `letter-spacing` negativo en `h1`/`h2` para compensar el tamaño mayor
+- Nuevo bloque `html { font-size: clamp(16px, 15.5px + 0.2vw, 18px); }` — sube el tamaño raíz del documento (y por tanto todo lo medido en `rem`) de forma fluida
+
+#### Verificación
+- ✅ `pnpm --filter web build`: sin errores nuevos
+- ✅ Revisado `Navbar.tsx` (`h-16` sticky) y `components/ui/button.tsx` (alturas `h-9`/`h-10`/`h-11` en `rem`): al estar en `rem`, escalan proporcionalmente con el nuevo `font-size` del `html` sin generar overflow (padding y altura crecen juntos)
+- ✅ No se editó `components/ui/button.tsx` ni ningún otro archivo de `components/ui/` — el aumento de tamaño les llega automáticamente vía el `html` más grande y la nueva escala de `fontSize`
+- ⚠️ Sin navegador real disponible en este entorno para verificación visual de overflow en tarjetas/botones en viewports reales; se recomienda QA visual manual (375px/768px/1280px) antes de cerrar la tarea del todo
+
+#### Archivos modificados
+- ✅ `apps/web/tailwind.config.ts` (`theme.extend.fontSize`)
+- ✅ `apps/web/src/index.css` (jerarquía `h1`-`h6`, `html { font-size }`)
+
+---
+
+### ✅ Paleta de marca: rampa de luminosidad del guinda + degradados (Tarea 6 del documento de mejoras)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `style/brand-color-palette`
+
+#### Objetivo
+Corregir cualquier "tema rojo" genérico por el guinda real de marca (`#682222`), definir una rampa de luminosidad (50…900) documentada en `tailwind.config.ts` para usar en degradados y estados sin salir de los 4 colores del manual, y aplicar degradados guinda↔negro en hero/sliders (estilo de los flyers).
+
+#### Estado previo (verificado antes de implementar)
+El guinda `#682222` **ya estaba correcto** en `cee.red` (no había ningún resto del "tema rojo" genérico del esqueleto inicial) y `EventSlider.tsx` ya usaba un degradado guinda↔negro (`from-cee-ink/90` + `from-cee-red/35`) sobre las imágenes del carrusel. Lo que faltaba: (1) una rampa de luminosidad explícita y documentada (solo existían 3 variantes sueltas: `red`, `red-dark`, `red-light`, sin escala numerada ni cobertura completa 50–900); (2) `--primary`/`--ring` en HSL no coincidían exactamente con el guinda real (`0 43% 27%` vs. el HSL real del hex, `0 51% 27%`); (3) el Hero de la Home y los heros de `AboutPage`/`MultimediaPage` usaban un overlay/fondo guinda **sólido**, no un degradado guinda↔negro.
+
+#### Decisión: rampa de 10 pasos (50–900) con el mismo hue/saturación del guinda real, variando solo luminosidad
+Se calculó el HSL exacto de `#682222` (`hsl(0, 51%, 27%)`, vía Node: `r=0x68,g=0x22,b=0x22`) y se construyó la rampa interpolando manualmente la luminosidad en hex desde casi blanco (`50`) hasta casi negro (`900`), manteniendo `700` como el valor exacto de marca (`#682222`) y `DEFAULT` apuntando a `700` — así cualquier uso existente de `bg-cee-red` (sin sufijo numérico) sigue resolviendo exactamente al mismo color que antes, sin romper nada.
+
+#### Decisión: mantener `cee-red-dark`/`cee-red-light` como alias en vez de eliminarlos
+Esos dos nombres ya estaban en uso en 7+ archivos (`EventSlider`, `CourseCard`, etc.). En vez de migrar todos los usos a la nueva nomenclatura numérica (`cee-red-800`/`cee-red-500`), se dejaron como alias de los mismos valores hex (`red-dark` = `800`, `red-light` = `500`) para no generar un diff innecesariamente grande en archivos fuera del alcance de esta tarea.
+
+#### Cambios realizados
+
+##### 1. `apps/web/tailwind.config.ts` — `cee.red` pasa de 3 variantes sueltas a rampa de objeto
+- `cee.red` ahora es un objeto con pasos `50, 100, 200, 300, 400, 500, 600, 700, 800, 900` + `DEFAULT` (= `700` = `#682222`, el guinda exacto de marca)
+- Se agregó `cee.plomo` como alias explícito de `cee.gray` (`#A9A9A9`) — mismo valor, pero usando el nombre que el manual de marca usa en español, para que el código pueda referirse al rol de marca directamente
+- Comentario en el propio archivo documentando el criterio (alias de `700`, uso para degradados/estados)
+
+##### 2. `apps/web/src/index.css` — `--primary`/`--ring` corregidos a `0 51% 27%`
+- Antes `0 43% 27%` (aproximado); ahora coincide exactamente con el HSL real de `#682222`
+
+##### 3. Degradado guinda↔negro aplicado en heros de página completa (antes overlay/fondo sólido)
+- `apps/web/src/pages/home/HomePage.tsx`: sección Hero — `bg-gradient-to-br from-cee-red-900 via-cee-red-700 to-cee-ink`, y el overlay sobre la imagen pasa de `rgba(104,34,34,0.55)` sólido a `bg-gradient-to-tr from-cee-ink/70 via-cee-red-800/45 to-transparent`
+- `apps/web/src/pages/about/AboutPage.tsx`: hero principal y CTA de cierre ("¿Listo para especializarte?") con el mismo criterio de degradado
+- `apps/web/src/pages/multimedia/MultimediaPage.tsx`: hero principal con el mismo degradado
+
+#### Alcance respetado
+No se tocaron los usos de `bg-cee-red`/`border-cee-red` sólidos en botones, badges, estados activos (`PaginationControls`, `FilterSidebar`, `SectionAnchors`, `CourseCard`, etc.) — el documento de mejoras pide degradados específicamente en "hero/sliders, estilo de los flyers del manual", no en controles de UI puntuales, donde un color sólido es más legible y predecible.
+
+#### Archivos modificados
+- ✅ `apps/web/tailwind.config.ts` (rampa `cee.red.50-900`, `cee.plomo`)
+- ✅ `apps/web/src/index.css` (`--primary`, `--ring`)
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+- ✅ `apps/web/src/pages/about/AboutPage.tsx`
+- ✅ `apps/web/src/pages/multimedia/MultimediaPage.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web build`: sin errores nuevos; el CSS generado creció (54.11 kB → 55.36 kB), confirmando que las nuevas clases de la rampa (`cee-red-50`...`cee-red-900`) se compilaron correctamente
+- ✅ `bg-cee-red` (sin sufijo) sigue resolviendo al mismo hex que antes (`#682222`, ahora vía `DEFAULT`/`700`) — cero regresión visual en los usos existentes
+- ✅ Solo 4 colores de marca en juego (guinda en su rampa de luminosidad, plomo, negro, blanco); ningún color ajeno al manual introducido
+- ⚠️ Sin navegador real disponible en este entorno para verificación visual de los degradados; se recomienda revisar manualmente el Hero de la Home, `AboutPage` y `MultimediaPage` antes de cerrar la tarea del todo
+
+---
+
+### ✅ Brochure descargable (Tarea 6b del documento de mejoras)
+
+**Estado:** Completada (con PDF placeholder pendiente de reemplazo)
+**Fecha:** 2026-06-24
+**Rama:** `feat/brochure-download`
+
+#### Objetivo
+Permitir descargar el brochure institucional en 1 clic desde la Home (zona de Nosotros) y desde el Footer, con tracking simple del click y nombre de archivo versionado para evitar caché vieja.
+
+#### Decisión: PDF placeholder generado localmente, no el brochure real
+No se contó con el PDF institucional real del CEE-FIIS en este entorno. Se generó un PDF mínimo válido (1 página, texto plano, sin dependencias de librerías PDF) como marcador temporal en `apps/web/public/brochure-cee-2026.pdf`, con el propio contenido del archivo indicando explícitamente "PLACEHOLDER — debe ser reemplazado por el brochure real antes de publicar a producción". Esto permite que el flujo de descarga (botón → archivo → tracking) funcione de punta a punta y sea verificable, sin bloquear la tarea a la espera del diseño gráfico real. **Acción pendiente para el equipo:** reemplazar `apps/web/public/brochure-cee-2026.pdf` por el PDF de diseño real, manteniendo el mismo nombre de archivo (o subiendo el número de versión si cambia el contenido, ver siguiente decisión).
+
+#### Decisión: tracking via `CustomEvent` en `window`, sin instalar un SDK de analítica
+El repo no tiene ningún proveedor de analítica integrado (`grep` de `gtag`/`analytics`/`dataLayer` no arrojó nada salvo un doc de estrategia). Instalar un SDK (GA4, Plausible, etc.) está fuera del alcance de "tracking simple del click" pedido por esta tarea. Se creó `apps/web/src/lib/analytics.ts` con `trackEvent(name, params)`, que despacha un `CustomEvent` en `window` (cualquier script de GTM/GA4 que se integre después puede escuchar este evento sin tocar el componente) y además loggea en consola solo en modo desarrollo (`import.meta.env.DEV`) para verificar el click manualmente.
+
+#### Cambios realizados
+
+##### 1. `apps/web/public/brochure-cee-2026.pdf` (nuevo, placeholder)
+- Nombre de archivo versionado por año (`-2026`) para invalidar caché vieja cuando se actualice el contenido en el futuro (ver Tarea 6b del documento: "versionar el nombre del archivo")
+
+##### 2. `apps/web/src/constants/brochure.constants.ts` (nuevo)
+- `BROCHURE_URL = '/brochure-cee-2026.pdf'`, `BROCHURE_FILENAME = 'brochure-cee-2026.pdf'` — única fuente de verdad del nombre/ruta, para no repetirlo en cada componente que lo use
+
+##### 3. `apps/web/src/lib/analytics.ts` (nuevo)
+- `trackEvent(name, params)`: despacha `CustomEvent` en `window` + log en desarrollo
+
+##### 4. `apps/web/src/components/shared/BrochureDownloadButton.tsx` (nuevo)
+- Botón reutilizable (`<a>` con `download` + `target="_blank"`, tal como pide el documento de mejoras) que llama `trackEvent('brochure_download', { file })` en el click
+- Prop `variant: 'solid' | 'outline'` para adaptarse al fondo donde se use (guinda sólido en la Home, sobre fondo guinda degradado en el Footer)
+
+##### 5. `apps/web/src/components/home/AboutSection.tsx` — agregado el botón
+- Junto al CTA "Conocer más sobre el CEE" (zona de Nosotros en la Home, tal como pide el documento), variante `solid`
+
+##### 6. `apps/web/src/components/layout/Footer.tsx` — agregado el botón
+- Debajo de los iconos de redes sociales, en la columna de marca; variante `outline` con clases sobreescritas (`border-white/40 text-white`, vía `cn`/`tailwind-merge`) para legibilidad sobre el fondo guinda degradado del Footer
+
+#### Archivos nuevos
+- ✅ `apps/web/public/brochure-cee-2026.pdf` (placeholder — reemplazar por el real)
+- ✅ `apps/web/src/constants/brochure.constants.ts`
+- ✅ `apps/web/src/lib/analytics.ts`
+- ✅ `apps/web/src/components/shared/BrochureDownloadButton.tsx`
+
+#### Archivos modificados
+- ✅ `apps/web/src/components/home/AboutSection.tsx`
+- ✅ `apps/web/src/components/layout/Footer.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web build`: sin errores nuevos; confirmado que `apps/web/dist/brochure-cee-2026.pdf` se copia correctamente desde `public/` (Vite copia el directorio `public/` tal cual al build)
+- ✅ El botón usa `download` + `target="_blank"` en ambos puntos (Home y Footer), exactamente como pide el documento de mejoras
+- ⚠️ **Pendiente real:** el PDF servido es un placeholder de texto, no el brochure de diseño institucional — debe reemplazarse antes de producción
+- ⚠️ Sin navegador real disponible en este entorno para verificar la descarga end-to-end en desktop/móvil; se recomienda QA manual antes de cerrar la tarea del todo
+
+---
+
+### ✅ Promo para usuarios logueados, no admins (Tarea 7 del documento de mejoras)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `feat/member-promo-banner`
+
+#### Objetivo
+Banner `MemberPromo` visible solo para usuarios logueados con rol distinto de `admin` (miembros/alumnos), con beneficio/CTA, cerrable y con el cierre persistido sin usar `localStorage` directamente fuera de `authStore` (regla del repo), y sin parpadeo mientras se resuelve la sesión.
+
+#### Estado previo
+No existía ningún componente de promo/banner para miembros logueados en el repo.
+
+#### Decisión: el banner vive en `Layout.tsx`, fuera del `<main>` y antes del `snap-container` de la Home
+Para que la promo se vea en cualquier página (no solo Home) y no compita con el scroll-snap de la Tarea 2: se montó entre `<Navbar />` y `<main>`, como un banner de ancho completo no-`sticky` (a diferencia del Navbar, que sí es `sticky`). Al no ser `sticky`, no se resta espacio fijo en pantalla y no requiere ajustar `scroll-padding-top` del `.snap-container` — ese valor solo compensa elementos que permanecen fijos durante el scroll (el Navbar), no contenido que hace scroll normal antes de él.
+
+#### Decisión: el estado de cierre (`isMemberPromoDismissed`) se agrega al propio `authStore`, no a un store nuevo
+El documento de mejoras pide explícitamente "persistir cierre en `authStore`, no `localStorage` directo". `authStore.ts` es el único archivo del repo autorizado a tocar `localStorage` (regla documentada en el propio archivo y en `docs/CLAUDE.md`). Se siguió el mismo patrón ya usado para `token` (`TOKEN_KEY` + lectura inicial vía función `getInitialMockToken`): se agregó `PROMO_DISMISSED_KEY = 'cee_member_promo_dismissed'`, una función `getInitialPromoDismissed()` para el estado inicial del store, y la acción `dismissMemberPromo()` que escribe en `localStorage` y actualiza el estado de Zustand en el mismo lugar. Ningún componente toca `localStorage` directamente — `MemberPromo.tsx` solo llama `dismissMemberPromo()` desde `useAuth()`.
+
+#### Decisión: el cierre no se resetea en `logout()`
+Es una preferencia de "ya vi/cerré este banner en este navegador", no parte de la sesión del usuario — si se resetea en cada logout, un mismo dispositivo compartido por varios alumnos volvería a mostrar el banner en cada login, lo cual es ruidoso. Se deja persistente entre sesiones en el mismo navegador, igual criterio que un banner de cookies.
+
+#### Decisión: "no parpadear antes de resolver la sesión" se resuelve con el `isLoading` que ya existía en `authStore`
+No fue necesario agregar un nuevo flag — `authStore.isLoading` ya existía (`true` mientras `VITE_USE_MOCKS=false` y la sesión real no ha resuelto). `MemberPromo` retorna `null` mientras `isLoading` es `true`, antes de evaluar `isAuthenticated`/`role`.
+
+#### Cambios realizados
+
+##### 1. `apps/web/src/store/authStore.ts` — extendido
+- `PROMO_DISMISSED_KEY` + `getInitialPromoDismissed()` (mismo patrón que `getInitialMockToken`)
+- `AuthState.isMemberPromoDismissed: boolean` + acción `dismissMemberPromo()`
+- `logout()` no toca `isMemberPromoDismissed` (decisión explicada arriba)
+
+##### 2. `apps/web/src/components/shared/MemberPromo.tsx` (nuevo)
+- `useAuth()` → `{ user, isAuthenticated, isLoading, isMemberPromoDismissed, dismissMemberPromo }`
+- Reglas de visibilidad en cascada: `isLoading` → `null`; `!isAuthenticated || !user` → `null`; `user.role === 'admin'` → `null`; `isMemberPromoDismissed` → `null`
+- Contenido: saludo con el primer nombre del usuario, beneficio (15% dto. + código `CEE-MIEMBRO`), CTA "Ver programas" → `/programas`, botón de cierre (`X` de `lucide-react`) que llama `dismissMemberPromo()`
+
+##### 3. `apps/web/src/components/layout/Layout.tsx` — montado el banner
+- `<MemberPromo />` entre `<Navbar />` y `<main>`
+
+#### Archivos nuevos
+- ✅ `apps/web/src/components/shared/MemberPromo.tsx`
+
+#### Archivos modificados
+- ✅ `apps/web/src/store/authStore.ts`
+- ✅ `apps/web/src/components/layout/Layout.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web build`: sin errores nuevos
+- ✅ `grep` confirma que `localStorage` solo se toca dentro de `authStore.ts` (regla del repo intacta); `MemberPromo.tsx` no importa ni usa `localStorage` directamente
+- ✅ Mocks disponibles para probar los 3 casos (`apps/web/src/mocks/data/users.mock.ts`): usuarios con `role: 'student'` (deben ver la promo) y un usuario con `role: 'admin'` (no debe verla)
+- ⚠️ Sin navegador real disponible en este entorno para verificar visualmente los 3 casos (anónimo / alumno / admin) y la persistencia del cierre tras recargar la página; se recomienda QA manual antes de cerrar la tarea del todo
+
+---
+
+### ✅ Contador doble: cuenta regresiva de cursos + estadísticas (Tarea 8, 8.1 y 8.2 del documento de mejoras)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `feat/event-countdown`
+
+#### Objetivo
+8.1 — `CourseCountdown`: cuenta regresiva días/horas/min/seg hasta el inicio de un curso, en la tarjeta/detalle y en el Hero para el curso destacado, con manejo de fin de plazo y un solo intervalo compartido. 8.2 — `StatsCounter`: cifras institucionales con animación count-up al entrar en viewport, desde mock/config. Ambos respetan `prefers-reduced-motion`.
+
+#### Estado previo (verificado antes de implementar)
+`Course` (`@cee/types`) **no tenía ningún campo de fecha de inicio** — fue necesario agregarlo. Para 8.2, ya existía `useCountUp` + `StatCounter` (singular, GSAP `ScrollTrigger`, respeta `prefers-reduced-motion`, anima una sola vez), pero las cifras estaban hardcodeadas como un array `STATS` local dentro de `AboutPage.tsx`, sin componente reutilizable ni mock/config — no se pedía explícitamente "componente `StatsCounter`" como pieza propia, solo se usaba ad-hoc.
+
+#### Decisión 8.1: agregar `Course.startDate` a `@cee/types`, no un tipo separado
+Es un campo del propio curso (fecha de inicio de dictado), análogo a `createdAt`/`updatedAt` que ya existían. Al ser un campo nuevo y requerido en una interfaz ya usada en 18 cursos mock (`apps/web`) + 8 cursos mock (`apps/admin`) + 2 formatters de fila Supabase (`formatCourse` en `apps/web` y `apps/admin`) + 1 builder de formulario (`buildCourseFromInput` en `apps/admin`), se actualizaron los 4 puntos para que el build siguiera siendo válido — el compilador de TypeScript los fue señalando uno por uno al agregar el campo como requerido.
+
+#### Decisión 8.1: intervalo único compartido vía un módulo singleton (`useGlobalSecondTick`), no un `setInterval` por componente
+El documento de mejoras pide explícitamente "un solo intervalo compartido si hay varios contadores en pantalla (performance)". Se creó `useGlobalSecondTick()`: un único `setInterval(1000ms)` a nivel de módulo (no de componente), con un `Set` de listeners — cada `CourseCountdown` en pantalla se suscribe/desuscribe a ese tick compartido en vez de crear su propio intervalo. El intervalo real solo corre mientras haya al menos un listener activo (se detiene cuando el último `CourseCountdown` se desmonta), evitando fugas.
+
+#### Decisión 8.1: regla de negocio para "¡Ya inició!" vs. "Inscripciones cerradas"
+No existe en `@cee/types` un campo de "fecha de cierre de inscripciones" separado de `startDate` (no estaba definido antes ni se pedía agregarlo). Se usó `course.status` como proxy de la regla de negocio: al llegar a cero, si el curso sigue `published` se asume que sigue dictándose con normalidad ("¡Ya inició!"); si está en otro estado (`draft`/`review`, es decir no estaba realmente abierto a inscripción) se muestra "Inscripciones cerradas". Es una aproximación razonable con los datos existentes, documentada aquí para que el equipo la ajuste si en el futuro se modela una fecha de cierre explícita.
+
+#### Decisión 8.1: "curso destacado" en el Hero = el próximo a iniciar entre los publicados
+El documento dice "para el curso destacado, en el Hero/slider" sin definir qué hace a un curso "destacado". Se eligió el criterio más simple y siempre disponible con los datos actuales: el curso `published` con `startDate` más próxima (`getFeaturedCourse` en `HomePage.tsx`, ordena y toma el primero). El Hero ya no tenía ningún curso específico referenciado antes de este cambio — el degradado/imagen de fondo es genérico, así que esto añade contenido dinámico nuevo, no reemplaza nada existente.
+
+#### Decisión 8.2: `StatsCounter` como componente nuevo en `components/shared/`, reutilizando `StatCounter` (singular) sin tocarlo
+`StatCounter` (la pieza individual con `useCountUp`) ya cumplía correctamente el comportamiento pedido (count-up, una sola vez, respeta `prefers-reduced-motion`) — no se reescribió. Se extrajeron las cifras de `AboutPage.tsx` a `config/institutional-stats.ts` (mock/config, tal como pide el documento) y se creó `StatsCounter` (plural, nuevo) como el grid completo reutilizable, con `forwardRef` para que `AboutPage.tsx` siga pudiendo aplicarle su `useScrollReveal` (selector `:scope > *`) exactamente como antes.
+
+#### Cambios realizados
+
+##### 1. `packages/types/src/index.ts` — agregado `Course.startDate`
+- `startDate: string` (ISO date), entre `imageUrl` y `academicHours`
+
+##### 2. Mocks y formatters actualizados (requeridos por el nuevo campo)
+- `apps/web/src/mocks/data/courses.mock.ts`: `startDate` agregado a los 18 cursos (fechas entre 2026-06-22 y 2026-09-14, mezcla de próximas a iniciar y más lejanas)
+- `apps/admin/src/mocks/courses.ts`: `startDate: '2026-07-15'` en el default de `buildCourse()`
+- `apps/web/src/services/courses.service.ts` y `apps/admin/src/services/coursesService.ts`: `CourseRow.start_date` + mapeo en `formatCourse()`; `buildCourseFromInput()` (admin) usa `existing?.startDate ?? now`
+
+##### 3. `apps/web/src/hooks/useGlobalSecondTick.ts` (nuevo)
+- Singleton: un `setInterval(1000ms)` compartido a nivel de módulo, con `Set<listener>`; arranca con el primer suscriptor, se detiene con el último
+
+##### 4. `apps/web/src/hooks/useCourseCountdown.ts` (nuevo)
+- `useCourseCountdown(startDate)`: se suscribe a `useGlobalSecondTick`, calcula `{ days, hours, minutes, seconds, hasStarted }` en cada tick
+
+##### 5. `apps/web/src/components/shared/CourseCountdown.tsx` (nuevo)
+- Si `hasStarted`: "¡Ya inició!" (`status === 'published'`) o "Inscripciones cerradas" (cualquier otro estado)
+- Si no: `dd`h`hh`m`mm`s`ss` con `tabular-nums`; `role="timer"`, `aria-live` desactivado bajo `prefers-reduced-motion`
+- Prop `variant: 'light' | 'dark'` para adaptarse al fondo (tarjetas blancas vs. Hero guinda)
+
+##### 6. Integración de `CourseCountdown`
+- `apps/web/src/components/shared/CourseCard.tsx`: debajo de horas/inscritos, antes del precio
+- `apps/web/src/components/course/CourseSidebar.tsx`: debajo del precio, antes del botón "Inscribirme"
+- `apps/web/src/pages/home/HomePage.tsx`: en el Hero, dentro de una cápsula `bg-white/10`, mostrando el título del curso destacado + su countdown (`variant="dark"`); se calcula con `getFeaturedCourse()`, función local que ordena los cursos `published` por `startDate` ascendente
+
+##### 7. `apps/web/src/config/institutional-stats.ts` (nuevo)
+- `INSTITUTIONAL_STATS`: las 4 cifras que antes vivían hardcodeadas en `AboutPage.tsx`
+
+##### 8. `apps/web/src/components/shared/StatsCounter.tsx` (nuevo)
+- Grid `sm:grid-cols-2 lg:grid-cols-4` sobre `INSTITUTIONAL_STATS`, reutilizando `StatCounter` (singular) por cifra; `forwardRef` para exponer el nodo del grid
+
+##### 9. `apps/web/src/pages/about/AboutPage.tsx` — refactor
+- Eliminado el array `STATS` local y el grid manual; ahora usa `<StatsCounter ref={statsGridRef} className="mt-12" />`, conservando el mismo `useScrollReveal` que ya tenía
+
+#### Alcance respetado
+No se agregó `StatsCounter` a la Home — la sección "Nosotros" de la Home (Tarea 4) ya es compacta dentro del viewport del scroll-snap (Tarea 2) y el CTA "Conocer más sobre el CEE" ya enlaza a `/nosotros`, donde las estadísticas se muestran. Duplicarlas en la Home habría forzado la sección a crecer más allá de `100svh` sin necesidad real.
+
+#### Archivos nuevos
+- ✅ `apps/web/src/hooks/useGlobalSecondTick.ts`
+- ✅ `apps/web/src/hooks/useCourseCountdown.ts`
+- ✅ `apps/web/src/components/shared/CourseCountdown.tsx`
+- ✅ `apps/web/src/config/institutional-stats.ts`
+- ✅ `apps/web/src/components/shared/StatsCounter.tsx`
+
+#### Archivos modificados
+- ✅ `packages/types/src/index.ts` (`Course.startDate`)
+- ✅ `apps/web/src/mocks/data/courses.mock.ts`
+- ✅ `apps/admin/src/mocks/courses.ts`
+- ✅ `apps/web/src/services/courses.service.ts`
+- ✅ `apps/admin/src/services/coursesService.ts`
+- ✅ `apps/web/src/components/shared/CourseCard.tsx`
+- ✅ `apps/web/src/components/course/CourseSidebar.tsx`
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+- ✅ `apps/web/src/pages/about/AboutPage.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web build` y `pnpm --filter admin build`: ambos sin errores tras propagar `startDate` a todos los puntos donde se construye un `Course` completo
+- ✅ El compilador de TypeScript confirmó (al fallar antes de los fixes) que no quedó ningún constructor de `Course` sin el campo nuevo
+- ✅ `CourseCountdown` reutiliza el mismo tick global en `CourseCard`, `CourseSidebar` y el Hero simultáneamente — un solo `setInterval` activo independientemente de cuántos contadores estén montados
+- ✅ `StatCounter`/`useCountUp` (reutilizados sin cambios) ya manejaban correctamente "una sola vez" y `prefers-reduced-motion`; no se modificó su comportamiento
+- ⚠️ Sin navegador real disponible en este entorno para verificar visualmente el countdown corriendo en tiempo real y el count-up de estadísticas al hacer scroll; se recomienda QA manual antes de cerrar la tarea del todo
+
+---
+
+### ✅ Orden de secciones de la Home + CTA principal (Tarea 9 del documento de mejoras)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `feat/home-section-order-and-cta`
+
+#### Objetivo
+Reordenar la Home según: Hero/Sliders → Cursos → Programas → Nosotros → Blog → Contacto/CTA → Footer, y añadir un CTA principal ("Inscríbete"/"Solicita información" → correo/contacto) repetido en el Hero y en el cierre, coordinado con el scroll-snap (Tarea 2) y dejando el terreno listo para los botones laterales (Tarea 10).
+
+#### Decisión: una sola sección de catálogo ("Programas"), no dos secciones "Cursos" + "Programas" separadas
+El documento de mejoras lista "Cursos" y "Programas" como pasos distintos del orden, pero el dominio real de este sitio modela una sola entidad (`Course`, `@cee/types`) expuesta bajo una única ruta pública (`ROUTES.CATALOG = '/programas'`); no existen dos catálogos ni dos colecciones de datos diferentes. Crear una segunda sección que muestre los mismos cursos bajo otro título habría sido contenido duplicado sin valor real. Se mantuvo la única sección de catálogo ya existente ("Programas destacados", `id="programas"`) en la posición que le corresponde en el orden pedido. Si en el futuro el negocio diferencia "cursos sueltos" de "programas certificados" como colecciones distintas, ese cambio de modelo de datos es un prerequisito antes de poder separar la sección.
+
+#### Decisión: el orden de secciones ya casi coincidía con lo pedido — solo faltaba agregar la sección de cierre "Contacto/CTA"
+Antes de esta tarea, el orden ya era Hero → Eventos(Sliders) → Programas → Nosotros → Blog (resultado acumulado de las Tareas 1, 2, 4 y 8). No fue necesario mover ninguna sección existente — solo se agregó la sección final `id="contacto"` al fondo, que es justo lo que el orden pedido (`...→ Blog → Contacto/CTA → Footer`) requería y que aún no existía.
+
+#### Decisión: `ContactCtaSection` enlaza a `/contacto`, no usa el flujo `buildInscripcionUrl`
+A diferencia de los botones "Inscribirme" de `CourseCard`/`CourseSidebar` (que llevan un curso específico preseleccionado vía `?curso=<id>`, Fase 4), el CTA de cierre de la Home no tiene un curso de contexto — es una llamada a la acción general. Se usó un link directo a `ROUTES.CONTACT` ("Inscríbete ahora") y un `mailto:` directo a `CONTACT_INFO.email` ("Solicita información"), cubriendo ambas variantes de CTA que pide el documento ("Inscríbete" / "Solicita información").
+
+#### Decisión: el Hero ahora tiene dos botones (CTA principal + CTA secundario), no solo "Explorar Cursos"
+Se agregó "Inscríbete ahora" (→ `/contacto`) como CTA principal junto al ya existente "Explorar Cursos" (→ `/programas`, ahora como botón `outline` secundario), para que el llamado a la acción esté presente y sea visualmente consistente entre el Hero y el cierre (mismo texto "Inscríbete ahora" en ambos puntos, tal como pide "repetido en puntos clave: hero + cierre").
+
+#### Cambios realizados
+
+##### 1. `apps/web/src/components/home/ContactCtaSection.tsx` (nuevo)
+- Título + copy de cierre, dos CTAs: "Inscríbete ahora" (`Link` a `/contacto`) y "Solicita información" (`mailto:` a `CONTACT_INFO.email`, icono `Mail`)
+
+##### 2. `apps/web/src/pages/home/HomePage.tsx`
+- Nueva sección `id="contacto"` al final (antes de cerrar `snap-container`), con `snap-section` y el mismo degradado guinda↔negro de marca (Tarea 6) usado en el Hero — refuerza que ambas son las secciones "hero" de apertura y cierre
+- `SECTION_ANCHORS` extendido con `{ id: 'contacto', label: 'Contacto' }` (ahora 6 anclas)
+- Hero: el botón único "Explorar Cursos" se reemplaza por un grupo de dos botones — "Inscríbete ahora" (primario, → `/contacto`) y "Explorar Cursos" (secundario `outline`, → `/programas`)
+
+#### Alcance respetado
+No se tocó el orden interno de Eventos/Programas/Nosotros/Blog (ya coincidía con lo pedido desde tareas anteriores); tampoco se implementaron los botones laterales de la Tarea 10 — solo se deja el terreno coordinado (6 secciones con `id` consistente, ya reflejadas en `SECTION_ANCHORS`) para que esa tarea los reutilice.
+
+#### Archivos nuevos
+- ✅ `apps/web/src/components/home/ContactCtaSection.tsx`
+
+#### Archivos modificados
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web build`: sin errores nuevos
+- ✅ Orden final de secciones confirmado en el JSX: `hero` → `eventos` → `programas` → `nosotros` → `blog` → `contacto`, seguido del `Footer` (que vive en `Layout.tsx`, fuera de la Home, sin cambios)
+- ✅ El texto "Inscríbete ahora" aparece tanto en el Hero como en el cierre, con el mismo destino (`/contacto`)
+- ⚠️ Sin navegador real disponible en este entorno para verificar visualmente el scroll-snap con la sexta sección y el aspecto de los dos botones del Hero en mobile; se recomienda QA manual antes de cerrar la tarea del todo
+
+---
+
+### ✅ Botones principales a los costados (Tarea 10 del documento de mejoras)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `feat/home-side-action-buttons`
+
+#### Objetivo
+Mover las acciones principales (Cursos, Programas, Brochure, Contacto) a columnas/barras laterales fijas en desktop, dejando la *main window* libre para los sliders/contenido; en móvil, colapsar a una barra inferior; accesible (foco, `aria-label`, contraste sobre el degradado guinda).
+
+#### Estado previo
+No existía ningún componente de acciones laterales. Sí existía `SectionAnchors` (Tarea 2): dots de navegación entre secciones, fijos en el lado **derecho** (`right-4`) — una pieza distinta y ya ocupando ese lateral.
+
+#### Decisión: lateral izquierdo para las acciones, para no competir con los dots de navegación de sección
+`SectionAnchors` (Tarea 2) ya vive en `right-4` y cumple un propósito distinto (indicar/saltar entre secciones del scroll-snap, no son acciones de negocio). Poner las 4 acciones de esta tarea en el mismo lado habría obligado a fusionar dos componentes con responsabilidades distintas o a apilarlos de forma confusa. Se usó el lateral **izquierdo** (`left-4`), simétrico al de los dots, dejando el centro (`main window`) completamente libre para el Hero/slider, tal como pide el documento.
+
+#### Decisión: en móvil, barra inferior fija (no colapso a los dots/controles del slider)
+El documento ofrecía dos alternativas para móvil ("barra inferior o a los dots/controles del slider"). Se eligió la barra inferior porque las 4 acciones (Cursos, Programas, Brochure, Contacto) son de navegación/conversión general de toda la Home, no específicas del `EventSlider` — mezclarlas con los controles del carrusel habría sido confuso semánticamente y además el `EventSlider` ya tiene sus propios controles (flechas, dots) con su propio significado (Tarea 1).
+
+#### Decisión: "Programas" enlaza a `#programas` (ancla in-page), no a `/programas`
+De las 4 acciones, "Cursos" y "Contacto" tienen sentido como navegación a otra ruta (catálogo completo, formulario de contacto). "Programas" en el contexto de esta barra se interpretó como acceso directo a la sección "Programas destacados" que ya está en la propia Home (consistente con la Tarea 9, donde se decidió que "Cursos" y "Programas" son la misma entidad/sección) — por eso usa un ancla `#programas` en vez de duplicar el link de "Cursos" hacia el catálogo.
+
+#### Decisión: "Brochure" reutiliza `BROCHURE_URL`/`trackEvent` de la Tarea 6b, sin duplicar lógica
+El botón de brochure en esta barra dispara el mismo `trackEvent('brochure_download', ...)` ya creado en la Tarea 6b (`apps/web/src/lib/analytics.ts`), con un parámetro `source` distinto (`home_side_actions`) para diferenciar en analítica desde dónde se descargó. No se creó un componente nuevo de descarga — se usó un `<a download target="_blank">` directo con la misma constante `BROCHURE_URL`/`BROCHURE_FILENAME`.
+
+#### Decisión: un solo componente `ActionLink` interno parametrizado por `className`/`children`, evitando duplicar la lógica de enlace (Link/anchor/anchor-ancla/download) entre la variante desktop y móvil
+Las 4 acciones tienen 3 tipos de destino distintos (ruta interna, ancla `#`, descarga de archivo) — en vez de repetir esa lógica condicional dos veces (una para los botones circulares de desktop, otra para los botones con label de móvil), se extrajo a un único componente `ActionLink` que decide qué elemento renderizar (`Link`, `<a href="#...">`, `<a download>`) y solo cambia el contenido/clases según dónde se use.
+
+#### Decisión: el `WhatsAppFab` (FAB existente, fijo en `bottom-6 right-6` en todas las páginas) se reubica solo en la Home y solo en móvil/tablet
+Al agregar la barra de acciones fija en la franja inferior (`fixed inset-x-0 bottom-0`, visible `lg:hidden`), el `WhatsAppFab` (que ya vivía fijo en `bottom-6 right-6` sin distinción de página) habría quedado visualmente superpuesto o tapado por esa barra en pantallas pequeñas. Se le agregó lógica condicional con `useLocation()`: en la Home y por debajo de `lg`, sube a `bottom-20`; en el resto de páginas (sin esta barra) y en desktop (donde la barra de acciones es la columna lateral, no ocupa la franja inferior), se mantiene en `bottom-6` como siempre.
+
+#### Cambios realizados
+
+##### 1. `apps/web/src/components/home/HomeSideActions.tsx` (nuevo)
+- `ACTIONS`: Cursos (`/programas`), Programas (`#programas`), Brochure (descarga + tracking), Contacto (`/contacto`)
+- `ActionLink`: componente interno que renderiza `Link`/`<a href="#...">`/`<a download>` según el tipo de acción, reutilizado por ambas variantes
+- Desktop (`lg:flex`, `fixed left-4 top-1/2 -translate-y-1/2`): columna de botones circulares con tooltip al hover/focus (mismo patrón visual que `SectionAnchors`)
+- Móvil (`lg:hidden`, `fixed inset-x-0 bottom-0`): barra horizontal con ícono + label, fondo `bg-cee-ink/90` + `backdrop-blur-sm` para contraste sobre cualquier sección
+- Accesibilidad: `aria-label` en cada acción, `focus-visible:outline` con offset, contraste verificado sobre fondo oscuro/guinda (`text-white/85` con hover a blanco sólido)
+
+##### 2. `apps/web/src/pages/home/HomePage.tsx`
+- Montado `<HomeSideActions />` junto a `<SectionAnchors />`
+- Sección `id="contacto"` (Tarea 9): `pb-24` en móvil/tablet (`lg:pb-16` en desktop) para que la barra inferior fija no tape el último contenido visible
+
+##### 3. `apps/web/src/components/shared/WhatsAppFab.tsx` — reubicación condicional
+- `useLocation()` + `ROUTES.HOME`: en la Home, `bottom-20 lg:bottom-6`; en cualquier otra página, `bottom-6` (comportamiento idéntico al de antes de esta tarea)
+
+#### Alcance respetado
+No se tocó `SectionAnchors.tsx` (Tarea 2) — sigue siendo el componente de navegación de sección, sin mezclarse con las acciones de negocio de esta tarea, aunque ambos comparten el mismo patrón visual de "dots/botones circulares con tooltip" por consistencia de diseño.
+
+#### Archivos nuevos
+- ✅ `apps/web/src/components/home/HomeSideActions.tsx`
+
+#### Archivos modificados
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+- ✅ `apps/web/src/components/shared/WhatsAppFab.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web build`: sin errores nuevos
+- ✅ Las 4 acciones aparecen en ambas variantes (desktop: columna izquierda; móvil: barra inferior), sin duplicar la lógica de routing/descarga entre ambas
+- ✅ `SectionAnchors` (derecha) y `HomeSideActions` (izquierda) no se solapan: lados opuestos de la pantalla
+- ✅ El `WhatsAppFab` ya no debería quedar tapado por la barra inferior de acciones en la Home en viewports `<lg`
+- ⚠️ Sin navegador real disponible en este entorno para verificar visualmente el contraste, el solapamiento real con el FAB de WhatsApp, y la navegación por teclado (tab order) en los 3 elementos fijos (dots, acciones, FAB) simultáneos; se recomienda QA manual antes de cerrar la tarea del todo
+
+---
+
+### ✅ Pulido visual de la Home (Tarea Extra A del documento de mejoras)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `style/home-visual-polish`
+
+#### Objetivo
+Elevar el acabado visual de la Home: espaciado/ritmo, sombras y radios coherentes, microinteracciones (hover/focus, transiciones 150–250ms, *skeletons* de carga), hero con degradado de marca, iconografía coherente y estados vacíos/carga/error decentes.
+
+#### Estado previo (gran parte ya cubierto incrementalmente en tareas anteriores)
+Antes de esta tarea, varias de las metas de Extra A **ya se habían resuelto** como efecto colateral de las tareas 1–10: el hero con degradado guinda↔negro (Tarea 6), las microinteracciones de hover/`hover:-translate-y`/transiciones en cards y botones (presentes desde Fase 3 y reforzadas en tareas posteriores), la iconografía exclusivamente `lucide-react` (consistente en todo el repo), los radios/sombras vía tokens CSS (`--r-*`, `--shadow-*`). Lo que **faltaba concretamente**: *skeletons* de carga reales en los componentes de la Home (cursos, blog, slider) — usaban texto plano "Cargando..." — y estados de carga que evitaran el salto de layout (CLS).
+
+#### Decisión: skeletons con la misma silueta que el componente real, en vez de spinners genéricos
+Para evitar CLS (Cumulative Layout Shift, también relevante para Extra B) y dar sensación "premium", se crearon esqueletos que replican la estructura exacta del componente final (mismo `aspect-ratio` de imagen, mismas alturas de líneas de texto/botones), usando `animate-pulse` + `bg-secondary` — el mismo patrón mínimo que ya existía suelto en `CatalogPage.tsx`, ahora encapsulado en componentes reutilizables. Así el contenido real "encaja" en el hueco que dejó el skeleton sin reflow.
+
+#### Cambios realizados
+
+##### 1. `apps/web/src/components/shared/CourseCardSkeleton.tsx` (nuevo)
+- Réplica de la silueta de `CourseCard` (imagen `aspect-[16/9]`, badge, título, 2 líneas de descripción, precio, 2 botones)
+
+##### 2. `apps/web/src/components/blog/BlogCardSkeleton.tsx` (nuevo)
+- Réplica de la silueta de `BlogCard` (imagen, fecha, título, 2 líneas de resumen)
+
+##### 3. `apps/web/src/pages/home/HomePage.tsx` — sección de cursos
+- El texto "Cargando cursos..." se reemplaza por un grid de 3 `CourseCardSkeleton` mientras `isLoading`
+
+##### 4. `apps/web/src/components/home/BlogSection.tsx`
+- "Cargando entradas..." → grid de 3 `BlogCardSkeleton`
+
+##### 5. `apps/web/src/components/home/EventSlider.tsx` + `HomePage.tsx`
+- Nuevo prop `isLoading` en `EventSlider`: cuando es `true`, renderiza un bloque skeleton con el mismo `aspect-ratio` responsivo del carrusel (`4/5` → `16/9` → `21/9`) en vez de retornar `null` (que dejaba un hueco vacío durante la carga); `HomePage` ahora pasa `isLoading={eventsLoading}` desde `useEvents()`
+
+#### Alcance respetado
+No se rehizo el hero (ya tenía el degradado de marca desde la Tarea 6) ni se tocaron las microinteracciones existentes de cards/botones (ya cumplían). El "8pt spacing" se respeta vía la escala de Tailwind ya en uso; no se hizo una refactorización masiva de spacing que habría tocado decenas de archivos fuera de foco sin necesidad real.
+
+#### Archivos nuevos
+- ✅ `apps/web/src/components/shared/CourseCardSkeleton.tsx`
+- ✅ `apps/web/src/components/blog/BlogCardSkeleton.tsx`
+
+#### Archivos modificados
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+- ✅ `apps/web/src/components/home/BlogSection.tsx`
+- ✅ `apps/web/src/components/home/EventSlider.tsx`
+
+---
+
+### ✅ Accesibilidad, SEO y rendimiento (Tarea Extra B del documento de mejoras)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `chore/home-redesign-qa`
+
+#### Objetivo
+Cierre de QA del rediseño: A11y (contraste, foco, `alt`, teclado, reduced-motion), SEO/meta (títulos, descripción, Open Graph), rendimiento (lazy-load, evitar CLS), y limpieza (código muerto de carrito, console.logs, imports sin uso).
+
+#### Estado previo (mayoría de A11y ya cubierta incrementalmente)
+A lo largo de las tareas 1–10 ya se había aplicado: `prefers-reduced-motion` respetado en todas las animaciones (GSAP `useScrollReveal`/hero, autoplay del slider, count-up, snap, countdown), `focus-visible:outline` en los elementos interactivos nuevos, `alt` en imágenes, navegación por teclado en slider y anclas. El carrito ya se había eliminado por completo en la Tarea 3. Lo que **faltaba concretamente**: el SEO/meta (el `index.html` solo tenía `<title>CEE-FIIS</title>`, sin description ni Open Graph) y una verificación sistemática de la limpieza (imports/locals sin uso).
+
+#### Decisión: SEO estático en `index.html`, no una librería de `<head>` dinámico (react-helmet)
+El sitio es una SPA y el documento pide "títulos, descripción, Open Graph para que el sitio comparta bien". Meta tags dinámicos por ruta (react-helmet/`@tanstack` head) serían lo ideal a futuro, pero instalar y cablear esa dependencia excede "que el sitio comparta bien" para el alcance de QA actual — los crawlers de redes sociales leen el `index.html` servido. Se completó el `<head>` estático con description, Open Graph (`og:type/site_name/title/description/locale`), Twitter Card y `theme-color` con el guinda de marca (`#682222`). Queda anotado que meta dinámico por ruta es una mejora futura cuando se priorice SEO por página.
+
+#### Decisión: activar `noUnusedLocals` + `noUnusedParameters` en `tsconfig.base.json`, no solo limpiar a mano
+En vez de una pasada manual de "buscar imports sin uso" (que no previene reincidencia), se activaron las dos flags en el tsconfig base compartido (`packages/config/tsconfig.base.json`), de modo que el `build`/`lint` (que es `tsc --noEmit`) ahora **falla** ante cualquier import/variable/parámetro sin uso, en `web` y en `admin`. Ambos builds pasaron limpios tras activarlas, lo que confirma que no había código muerto de ese tipo en ninguna de las dos apps — y de aquí en adelante el compilador lo impide.
+
+#### Cambios realizados
+
+##### 1. `apps/web/index.html` — SEO/meta
+- `<title>` descriptivo, `meta description`, Open Graph (`og:type`, `og:site_name`, `og:title`, `og:description`, `og:locale=es_PE`), Twitter Card (`summary_large_image`), `theme-color=#682222`
+
+##### 2. `packages/config/tsconfig.base.json` — limpieza forzada por el compilador
+- `noUnusedLocals: true`, `noUnusedParameters: true` (aplica a `apps/web` y `apps/admin`)
+
+##### 3. Skeletons (compartidos con Extra A) — también sirven a Extra B
+- Los skeletons de carga (Extra A) evitan CLS al reservar el espacio del contenido antes de que llegue, lo cual es directamente una mejora de rendimiento percibido / Web Vitals
+
+#### Verificación
+- ✅ `pnpm --filter web build` y `pnpm --filter admin build`: ambos sin errores con `noUnusedLocals`/`noUnusedParameters` activos — confirma cero imports/locals/parámetros sin uso en ambas apps
+- ✅ `grep` de `cart`/`carrito` en `apps/web/src` + `packages/types/src`: sin hits reales (código muerto de carrito ya eliminado en Tarea 3)
+- ✅ `grep` de `console.*`: solo `analytics.ts` (con guard `import.meta.env.DEV`) y un `console.error` en el handler de error de `MultimediaPage` — ambos legítimos, no son `console.log` de depuración olvidados
+- ✅ Todas las imágenes (`<img>`) tienen atributo `alt` (verificado: 0 archivos con `<img>` sin `alt`)
+- ✅ Las imágenes usan `aspect-ratio` (cards, slider, hero) → reserva de espacio que evita CLS; el primer asset del slider/hero usa `loading="eager"`/`fetchPriority="high"`, el resto `loading="lazy"`
+- ⚠️ Sin entorno de navegador real (ni Lighthouse/Playwright) en esta sesión para medir scores reales de perf/a11y/SEO ni el QA responsive cross-device; se recomienda una pasada manual con Lighthouse y DevTools (375/768/1280px) antes de dar el rediseño por cerrado del todo
+
+#### Archivos modificados
+- ✅ `apps/web/index.html`
+- ✅ `packages/config/tsconfig.base.json`
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones

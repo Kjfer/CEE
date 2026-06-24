@@ -47,6 +47,7 @@ export interface Course {
   price: number;
   originalPrice: number | null;
   imageUrl: string;
+  startDate: string; // ISO date, fecha de inicio del curso, ej. "2026-07-15"
   academicHours: number;
   certification: string;
   rating: number;
@@ -106,6 +107,18 @@ export interface EventSlide {
   imageUrl: string;
   ctaLabel: string;
   ctaHref: string;
+}
+
+// ---------- Blog ----------
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  imageUrl: string;
+  date: string; // ISO date, ej. "2026-06-10"
+  slug: string;
 }
 
 // ---------- Media / Videos ----------

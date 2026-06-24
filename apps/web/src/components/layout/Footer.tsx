@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Linkedin, Youtube, Mail, Phone, MapPin } from 'lucide-react';
+import { BrochureDownloadButton } from '@/components/shared/BrochureDownloadButton';
 import { navigationLinks } from '@/config/navigation';
 import { CONTACT_INFO } from '@/constants/contact.constants';
 
@@ -35,6 +36,11 @@ export function Footer() {
               </a>
             ))}
           </div>
+
+          <BrochureDownloadButton
+            variant="outline"
+            className="mt-6 border-white/40 text-white hover:border-white hover:bg-white hover:text-cee-red"
+          />
         </div>
 
         <div className="md:col-span-2 md:col-start-6">
