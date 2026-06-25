@@ -140,18 +140,6 @@ export interface EventSlide {
   ctaHref: string;
 }
 
-// ---------- Blog ----------
-
-export interface BlogPost {
-  id: string;
-  title: string;
-  summary: string;
-  content: string;
-  imageUrl: string;
-  date: string; // ISO date, ej. "2026-06-10"
-  slug: string;
-}
-
 // ---------- Media / Videos ----------
 
 export interface Video {
