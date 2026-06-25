@@ -3,6 +3,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Navbar } from '@/components/layout/Navbar';
 import { Toaster } from '@/components/ui/toast';
 import { WhatsAppFab } from '@/components/shared/WhatsAppFab';
+import { Chatbot } from '@/components/chatbot/Chatbot';
 
 export function Layout() {
   return (
@@ -14,6 +15,7 @@ export function Layout() {
       <Footer />
       <Toaster />
       <WhatsAppFab />
+      <Chatbot />
     </div>
   );
 }
