@@ -1920,6 +1920,36 @@ Para el avatar, no se justificaba una dependencia nueva: es solo una imagen con 
 
 ---
 
+### ✅ QA final del plan de mejoras (las 7 iniciativas)
+
+**Estado:** Completada
+**Fecha:** 2026-06-25
+
+#### Objetivo
+Verificación de cierre tras completar A–G: builds reales (no solo `tsc --noEmit`), barrido de todas las rutas públicas y de admin, búsqueda de referencias muertas y corrección de un defecto encontrado.
+
+#### Hallazgo y fix: `BlogPost` estaba declarado dos veces en `@cee/types`
+`packages/types/src/index.ts` tenía dos `export interface BlogPost { ... }` idénticas (línea ~122 y ~145) — residuo de un merge de hace varias sesiones (`feature/home-event-slider` ↔ trabajo en paralelo de un compañero sobre Blog). No causaba error porque TypeScript permite *declaration merging* entre interfaces idénticas, así que `tsc --noEmit` nunca lo marcó en ninguna sesión anterior. Se eliminó la segunda declaración (código muerto, sin impacto en ningún consumidor).
+
+#### Verificación realizada
+- ✅ `pnpm --filter web build` (build real de producción, no solo typecheck): sin errores. Único warning preexistente: chunk principal >500kB (no introducido por el plan de mejoras; candidato a code-splitting futuro, fuera de alcance)
+- ✅ `pnpm --filter admin build`: sin errores
+- ✅ Barrido de rutas públicas (`apps/web`, dev server): `/`, `/nosotros`, `/programas`, `/programas/:slug`, `/blog`, `/blog/:slug`, `/multimedia`, `/contacto`, `/profesores/:slug`, `/login`, `/registro` y una ruta inexistente (404 vía `NotFoundPage`) — todas responden `200`
+- ✅ Barrido de rutas de `apps/admin`: `/`, `/cursos`, `/cursos/nuevo`, `/ventas` — todas `200`
+- ✅ `grep` de `cartstore|addtocart|añadir al carrito|checkout`: cero referencias muertas
+- ✅ `grep` de `console.log`/`console.warn` fuera de los usos legítimos ya documentados: cero hallazgos nuevos
+- ✅ Todas las imágenes (`<img>` y el nuevo `Avatar`) tienen `alt`
+- ✅ Cruce `navigationLinks` (Navbar/Footer/MobileMenu) vs. `ROUTES` vs. rutas registradas en `router/index.tsx`: cada link de navegación apunta a una ruta real, y cada `ROUTES.*` tiene su entrada en el router — sin enlaces rotos
+- ✅ `Teacher`/`Course.instructors`/`courses.service.ts` siguen sin conflicto tras el fix del tipo duplicado (rebuild de `admin` y `web` confirmados después del cambio)
+
+#### Archivos modificados
+- ✅ `packages/types/src/index.ts` (elimina `BlogPost` duplicado)
+
+#### Conclusión
+Las 7 iniciativas del plan de mejoras (`docs/mejoras-finale/mejoras-finales2.md`) están completas, verificadas con build real y sin referencias muertas. Pendientes conocidos y documentados por iniciativa: SVG oficial del logo UNI (B), contrato backend de `Teacher` (F, O4), notificación de correo del formulario de contacto depende de infraestructura Supabase (E) — ninguno bloquea el funcionamiento actual en modo mock.
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones
