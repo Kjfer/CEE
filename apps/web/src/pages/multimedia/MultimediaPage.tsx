@@ -33,7 +33,7 @@ export default function MultimediaPage() {
           }}
         />
         <div className="relative mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 sm:py-24 lg:px-8">
-          <h1 className="text-4xl leading-tight sm:text-5xl">Testimonios</h1>
+          <h1 className="text-4xl leading-tight sm:text-5xl">Multimedia</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-white/90">
             Egresados del CEE-FIIS cuentan, en sus propias palabras, cómo nuestros programas
             impulsaron su carrera y transformaron su forma de liderar.
