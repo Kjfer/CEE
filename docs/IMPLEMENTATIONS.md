@@ -1651,6 +1651,275 @@ En vez de una pasada manual de "buscar imports sin uso" (que no previene reincid
 
 ---
 
+## Fase 9 — Plan de mejoras UI/UX (`docs/mejoras-finale/mejoras-finales2.md`)
+
+### ✅ Iniciativa A — Hero / Banner principal (Cambio 1)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `feat/about-section`
+
+#### Objetivo
+El Hero original tenía el corte diagonal aplicado a la imagen (lado derecho), dejando el texto sobre un fondo guinda uniforme sin un "bloque" visualmente contenido — de ahí la sensación de espacio muerto a la izquierda que pedía corregir el documento de mejoras. Se reestructura para que el bloque diagonal guinda sea el contenedor real de todo el texto, flush al borde izquierdo del viewport.
+
+#### Decisión: mover el `clip-path` de la imagen al bloque de texto, en vez de aplicarlo a la imagen
+Técnica: la imagen institucional pasa a ser un fondo `absolute inset-0` de pared a pared (sin recorte propio); el bloque de texto (gradiente `cee-red-800→700→900`) se renderiza **encima** (`z-10`) cubriendo `sm:w-[58%]` con `clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%)`. Como el bloque es opaco y está por delante, su recorte diagonal revela directamente la imagen de fondo en la cuña — mismo efecto visual que antes, pero ahora el corte vive en CSS sobre el contenedor del texto (pedido explícito de la tarea: "recrear el corte diagonal con CSS, en vez de incrustarlo en una imagen"), y el texto queda genuinamente alineado a la izquierda sin padding muerto antes de llegar al bloque.
+
+#### Decisión: layout distinto para mobile, no solo `hidden`/`block` sobre el mismo markup
+En mobile el bloque de texto pasa a `w-full` sin `clip-path` (cubre toda la sección, sin imagen visible detrás), y se agrega una franja de imagen separada (`h-48`, `sm:hidden`) **debajo** del texto — así se cumple el criterio "en mobile el texto va arriba a ancho completo y la imagen va debajo", en vez de simplemente ocultar la imagen en mobile como hacía la versión anterior (`hidden sm:block` sobre el mismo contenedor de imagen).
+
+#### Decisión: `NextStartBadge` como componente reutilizable (no editar `components/ui/badge.tsx`)
+El badge "Próximo a iniciar" + cuenta regresiva vivía como un `<div>` ad-hoc inline dentro del Hero. Se extrajo a `apps/web/src/components/shared/NextStartBadge.tsx`, que **envuelve** el `Badge` de shadcn (no lo edita) con la etiqueta en mayúsculas y reutiliza `CourseCountdown` ya existente. Queda disponible para cualquier otro lugar que necesite destacar "próximo curso a iniciar" (ej. listados), no solo el Hero.
+
+#### Cambios realizados
+- **`apps/web/src/components/shared/NextStartBadge.tsx`** (nuevo): badge reutilizable con estado de carga (skeleton) y estado vacío (`null` si no hay curso destacado)
+- **`apps/web/src/pages/home/HomePage.tsx`:**
+  - Hero reestructurado: imagen de fondo `absolute inset-0` (desktop) sin recorte propio, con leve `blur-[1px]` + overlay de degradado para legibilidad (pedido del doc: "leve desenfoque/overlay"); calidad de imagen reducida (`q=75` desktop / `q=70` mobile) como optimización de payload
+  - Bloque de texto: `clip-path` CSS aplicado al contenedor guinda, `sm:w-[58%]`, flush al borde izquierdo, sin el `mx-auto max-w-7xl` que generaba el espacio muerto percibido
+  - Franja de imagen visible debajo del texto en mobile (`sm:hidden`)
+  - Badge/cuenta regresiva inline reemplazado por `<NextStartBadge course={featuredCourse} isLoading={isLoading} />`
+  - Import de `CourseCountdown` removido de `HomePage.tsx` (ya no se usa directo ahí, vive dentro de `NextStartBadge`)
+
+#### Archivos nuevos
+- ✅ `apps/web/src/components/shared/NextStartBadge.tsx`
+
+#### Archivos modificados
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+- ✅ `docs/CONTEXT.md` (sección "Componentes Clave" + limpieza de menciones obsoletas a `cartStore`/badge de carrito, ya eliminados desde Fase 2 pero el documento no se había actualizado)
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ `curl` a `/` responde `200`
+- ✅ No se editó ningún archivo existente de `components/ui/` (el `Badge` de shadcn se reutiliza, no se modifica)
+- ⚠️ Sin `chromium-cli`/Playwright en este entorno; se recomienda verificación visual manual en navegador (375/768/1280px) antes de cerrar la iniciativa del todo
+
+#### Pendiente del plan de mejoras (no parte de esta tarea)
+- Tokens de marca (sección 1 del doc): ya cubiertos en espíritu por la rampa `cee.red.{50..900}` existente en `tailwind.config.ts`; falta definir `surface-cream`/`surface-grey` para las Iniciativas C/E
+- Iniciativa D (Multimedia → "Testimonios"), E (Contacto + Footer crema), F (Profesores), G (WhatsApp flotante) — no iniciadas
+
+---
+
+### ✅ Iniciativa B — Navbar con doble logo (Cambio 2, parcial)
+
+**Estado:** Completada (parcial — ver nota sobre O3)
+**Fecha:** 2026-06-25
+
+#### Objetivo
+Mostrar el logo del CEE junto al de la universidad en el Navbar, con separador vertical, mantener los links definitivos y el botón de sesión.
+
+#### Decisión: O2 (lista de links) ya estaba cerrada — no había nada que decidir
+El documento de mejoras pedía confirmar la lista final de links del navbar (Inicio · Nosotros · Programas · Blog · Multimedia · Contacto) como bloqueo O2. Al revisar `config/navigation.ts`, la lista ya coincidía exactamente con la pedida (quedó así desde la Fase 8, al agregar Blog). No se tocó.
+
+#### Decisión: O3 (logo de la universidad) se resuelve con el PNG ya existente en el repo, no con un placeholder
+El doc marcaba esta tarea como bloqueada por falta del SVG oficial de la UNI. Sin embargo, `apps/web/src/assets/icons/uni-logo.png` ya existe en el repo (usado en `InstitutionalLogos.tsx`). Se decidió usar ese PNG ya disponible en vez de dejar un slot vacío con placeholder — visualmente resuelve la tarea ya, aunque lo ideal a futuro sea reemplazarlo por un SVG vectorial cuando el CEE lo entregue (mismo placeholder/aviso que ya existe en `InstitutionalLogos.tsx`).
+- **No se implementó** la pestaña "Profesores" ni el rediseño del área derecha de sesión (eso es la Iniciativa F, fuera de alcance de esta tarea — evitar UI a medio terminar)
+- **No se mantuvo** la mención del doc a "badge de carrito (`cartStore`)": el carrito no existe en este proyecto desde la Fase 2 (decisión de alcance ya documentada); esa parte del documento de mejoras está desalineada con decisiones de producto ya tomadas y se ignoró a propósito
+
+#### Cambios realizados
+- **`apps/web/src/components/layout/Navbar.tsx`:** logo del CEE (SVG, ya existía) + separador vertical (`bg-border`) + logo de la UNI (PNG), ambos a la izquierda; el logo de la UNI y el separador se ocultan en mobile (`hidden sm:block`) — el `MobileMenu` (Sheet) ya mostraba solo el logo del CEE, sin cambios ahí
+
+#### Archivos modificados
+- ✅ `apps/web/src/components/layout/Navbar.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ `curl` a `/` responde `200`
+- ✅ No se editó ningún archivo de `components/ui/`
+
+#### Pendiente
+- Reemplazar `uni-logo.png` por un SVG vectorial oficial cuando el CEE lo entregue (mejora de nitidez, no bloqueante)
+- Iniciativa F (Profesores) queda pendiente como tarea propia; reserva de espacio en el área derecha del Navbar se hará junto con esa tarea, no antes
+
+---
+
+### ✅ Iniciativa C — Sección y cards de Blog (Cambio 3)
+
+**Estado:** Completada
+**Fecha:** 2026-06-25
+
+#### Objetivo
+El Blog ya funcionaba (tipo, service, hook, páginas, listado en Home — ver Fase 8); esta iniciativa es la pasada de *pulido visual* que pedía el documento de mejoras: fondo distinto del blanco, cards uniformes con sombra y borde guinda, fecha estandarizada en mayúsculas, fallback real ante imágenes rotas, y los tokens de fondo base (`surface-cream`/`surface-grey`) que habían quedado pendientes desde la Iniciativa A.
+
+#### Decisión: `surface-grey`/`surface-cream` como tokens de Tailwind, no clases sueltas
+Se agregaron a `tailwind.config.ts` (`cee.surface.grey` / `cee.surface.cream`) en vez de hardcodear el HEX en cada sección — mismo criterio que la rampa `cee.red`. `surface-cream` no se usa todavía (lo necesitará la Iniciativa E, Contacto/Footer) pero se definió ahora para no repetir esta misma discusión de tokens dos veces.
+
+#### Decisión: patrón de puntos vía CSS puro (`radial-gradient` + `background-size`), no un asset de imagen
+El doc pide explícitamente "patrón CSS sutil (no imagen pesada)". Se agregó la clase utilitaria `.bg-dot-pattern` en `index.css` (radial-gradient de `cee-red` al 8% de opacidad, grid de 22px) — cero peso adicional de red, reutilizable en cualquier sección sobre fondo claro.
+
+#### Decisión: `formatDateLong` en `lib/utils.ts`, no depender de la clase Tailwind `uppercase`
+La fecha ya se veía en mayúsculas por una clase CSS (`uppercase`) en `BlogCard`/`BlogPostPage`, pero el doc pide explícitamente un *helper de formato* (`formatDateLong`) que devuelva el string ya en mayúsculas ("11 DE MAYO DE 2026"). Esto importa más allá de lo visual: cualquier consumo que no pase por ese `<p className="uppercase">` (meta tags, exportar a PDF, lectores de pantalla que no respetan `text-transform` en todos los casos) seguía mostrando minúsculas. Se centralizó en `apps/web/src/lib/utils.ts` y se reemplazó el `Intl.DateTimeFormat` duplicado que vivía suelto en `BlogCard.tsx` y `BlogPostPage.tsx`.
+
+#### Cambios realizados
+- **`apps/web/tailwind.config.ts`:** tokens `cee.surface.{cream,grey}`
+- **`apps/web/src/index.css`:** clase `.bg-dot-pattern`
+- **`apps/web/src/lib/utils.ts`:** nuevo `formatDateLong(date)`
+- **`apps/web/src/components/blog/BlogCard.tsx`:** borde fino guinda (`border-cee-red/20`) + `shadow-sm` en reposo (antes solo `hover:shadow-md`, sin sombra base) + `hover:shadow-lg`; fallback real ante error de carga de imagen (ícono `ImageOff` de `lucide-react`, mismo patrón de `onError` que ya usaba `CourseCard`, no clases `hidden`/`flex` de Tailwind para evitar ambigüedad de especificidad — toggle por `style.display` directo); fecha vía `formatDateLong`
+- **`apps/web/src/components/blog/BlogCardSkeleton.tsx`:** mismo borde/sombra que `BlogCard` para que el estado de carga no “salte” visualmente al llegar los datos
+- **`apps/web/src/pages/blog/BlogPostPage.tsx`:** fecha vía `formatDateLong` (se quitó el `Intl.DateTimeFormat` duplicado)
+- **`apps/web/src/pages/home/HomePage.tsx`:** la sección `#blog` ahora tiene el fondo `bg-surface-grey bg-dot-pattern` a ancho completo (full-bleed), con el contenido (`BlogSection`) constreñido aparte en un `mx-auto max-w-7xl`
+- **`apps/web/src/pages/blog/BlogPage.tsx`:** mismo tratamiento de fondo full-bleed que la sección de Home, para que `/blog` y el bloque de Home se vean consistentes
+
+#### Archivos modificados
+- ✅ `apps/web/tailwind.config.ts`, `apps/web/src/index.css`, `apps/web/src/lib/utils.ts`
+- ✅ `apps/web/src/components/blog/BlogCard.tsx`, `BlogCardSkeleton.tsx`
+- ✅ `apps/web/src/pages/blog/BlogPostPage.tsx`, `BlogPage.tsx`
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ `curl` a `/` y `/blog` responde `200`
+- ✅ Las 4 entradas del mock (`mocks/data/blog.mock.ts`) ya tenían imagen y contenido reales desde la Fase 8 — no había ningún placeholder roto que arreglar en los datos, solo faltaba el fallback defensivo en el componente
+- ✅ Altura uniforme de las cards ya la daba el CSS grid (`align-items: stretch` por defecto) + `line-clamp-3` + `mt-auto` en el CTA, sin cambios necesarios ahí
+- ⚠️ Sin `chromium-cli`/Playwright en este entorno; se recomienda verificación visual manual en navegador
+
+---
+
+### ✅ Iniciativa D — Multimedia → "Testimonios" (Cambio 4, sin el renombrado visible)
+
+**Estado:** Completada (alcance reducido a pedido del usuario)
+**Fecha:** 2026-06-25
+
+#### Objetivo
+El doc pedía renombrar "Multimedia" a "Testimonios" (título, nav, copy) + enriquecer el degradado guinda + mejorar la calidad/distinción de las miniaturas de video. El usuario pidió explícitamente **no** aplicar el cambio de título — el resto de la iniciativa (copy enfocado en egresados, degradado, miniaturas) sí se mantiene.
+
+#### Decisión: se revierte el label de nav y el `h1` a "Multimedia"
+Primer intento: se cambió `navigation.ts` (label → "Testimonios") y el `h1` de `MultimediaPage.tsx` a "Testimonios". A pedido del usuario ("haz la D sin realizar el cambio de título") se revirtieron ambos a "Multimedia" — el resto de los cambios de esta iniciativa (párrafo enfocado en egresados, degradado enriquecido, miniaturas distintas) se conservan, porque el pedido fue específicamente sobre el título/label, no sobre el resto del contenido.
+
+#### Decisión (ya no aplica, queda solo como antecedente): la ruta seguía siendo `/multimedia`
+Esto se discutió antes de que el usuario decidiera no tocar el título — queda sin efecto práctico ahora porque tampoco cambió el nombre visible, pero se documenta para no repetir la misma pregunta si en el futuro se retoma el renombrado completo a "Testimonios".
+
+#### Decisión: lazy-load del reproductor ya estaba resuelto, no fue necesario tocar `VideoGallery.tsx`
+El doc pedía "lazy-load del iframe/poster y carga diferida del reproductor" como requisito de rendimiento. Verificado: las miniaturas (`<img>`) ya usaban `loading="lazy"`, y el `<iframe>` de YouTube solo se monta dentro del modal cuando el usuario hace click en una tarjeta (`selectedVideo` controla el render) — nunca se carga en el render inicial de la página. Ambos requisitos ya estaban cubiertos por el diseño existente; no se modificó `VideoGallery.tsx`.
+
+#### Cambios realizados
+- **`apps/web/src/config/navigation.ts`:** label se mantiene `'Multimedia'` (se probó `'Testimonios'` y se revirtió)
+- **`apps/web/src/pages/multimedia/MultimediaPage.tsx`:** `h1` se mantiene "Multimedia" (se probó "Testimonios" y se revirtió); el párrafo descriptivo sí quedó reescrito con enfoque en egresados; degradado enriquecido (`from-cee-red-900 via-cee-red-600 to-cee-ink` + overlay `radial-gradient` adicional para mayor riqueza tonal, sin salir de la paleta de marca)
+- **`apps/web/src/mocks/data/videos.mock.ts`:** las 6 entradas mock compartían la misma foto institucional como thumbnail (`CEE_THUMBNAIL` reutilizada 6 veces) — se reemplazó por una imagen Unsplash distinta y de mayor resolución (`w=800&q=80`) por video; títulos/descripciones reescritos con enfoque más explícito en historias de egresados (categoría `Testimonios` predominante)
+
+#### Archivos modificados
+- ✅ `apps/web/src/config/navigation.ts`
+- ✅ `apps/web/src/pages/multimedia/MultimediaPage.tsx`
+- ✅ `apps/web/src/mocks/data/videos.mock.ts`
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ `curl` a `/multimedia` responde `200`
+- ✅ Confirmado que ninguna miniatura se repite entre las 6 entradas del mock
+- ⚠️ Sin `chromium-cli`/Playwright en este entorno; se recomienda verificación visual manual en navegador
+
+---
+
+### ℹ️ Iniciativa G — Botón flotante de WhatsApp (Cambio transversal): ya estaba implementada
+
+**Estado:** Verificada (sin cambios — ya completa)
+**Fecha:** 2026-06-25
+
+Antes de tomar la Iniciativa E se revisó si G (más simple, sin bloqueos) ya estaba hecha. Resultado: **sí**, completa — `apps/web/src/components/shared/WhatsAppFab.tsx`, montado en `Layout.tsx`. Cumple los 3 criterios del doc: `position: fixed` esquina inferior derecha con `z-40`, link a `CONTACT_INFO.whatsappUrl` (número del CEE centralizado en `constants/contact.constants.ts`, no hardcodeado), `aria-label`, tamaño táctil de 56px (`h-14 w-14`), ícono real de WhatsApp (`WhatsAppIcon`, no un ícono genérico de `lucide-react`), y respeta `motion-reduce`. No se modificó nada.
+
+---
+
+### ✅ Iniciativa E — Formulario de Contacto + Footer (Cambio 5)
+
+**Estado:** Completada
+**Fecha:** 2026-06-25
+
+#### Objetivo
+Fondo crema en la página de Contacto (contraste con el formulario blanco), confirmar que no hay artefactos decorativos de fondo ("barra de tareas de escritorio" de la maqueta original), y cambiar el Footer a un fondo gris oscuro/negro — el formulario y sus validaciones, anti-spam y estados de carga ya existían de antes (Fase 3 frente 5) y no se tocaron.
+
+#### Decisión: el Footer pasa de degradado guinda a gris oscuro/negro, revirtiendo una decisión visual de una sesión anterior
+En una sesión anterior (fuera de este plan de mejoras) se había rediseñado el Footer con un degradado `cee-red → cee-red-dark`. El manual de marca (sección 1 del documento de mejoras) define explícitamente: *"Neutro oscuro · Negro #000000 · Uso: Texto, **footer**"* — es decir, el propio documento prescribe negro/gris oscuro para el footer, no guinda. Se cambió a `bg-gradient-to-b from-neutral-900 to-cee-ink` para cumplir esa regla de marca sin perder la profundidad visual del degradado.
+
+#### Decisión: no había "barra de tareas de Windows" que quitar — ya estaba limpio
+Esa tarea del doc describe un artefacto de la *maqueta de diseño* (imagen de referencia), no algo presente en el código real de `ContactPage.tsx`. Se verificó que la página ya no tiene ninguna imagen de fondo decorativa; nada que remover.
+
+#### Decisión: el formulario, validación, anti-spam y estados ya estaban completos — no se tocó esa lógica
+`ContactPage.tsx` ya tenía: validación manual + honeypot anti-spam, integración con `contactService` (mock/Supabase), estados de carga/éxito/error vía `useToast`, y soporte para curso preseleccionado (`?curso=<id>`, de la Fase 4). Solo se ajustó el fondo de la sección y se subió la sombra de las `Card` (`shadow-sm` → `shadow-md`) para que el formulario "resalte" más sobre el nuevo fondo crema, como pide el criterio de "Done" del doc.
+
+#### Nota sobre "asegurar que el formulario notifica al correo del CEE" (criterio de QA, Fase 7)
+Esa notificación depende de un trigger/función en el backend de Supabase (tabla `contact_leads`), no de código en `apps/web`. El frontend ya hace su parte correctamente (inserta sin pérdida de datos, valida antes de enviar, maneja errores); confirmar el envío de correo real es una verificación de infraestructura fuera del alcance de este repo de frontend.
+
+#### Cambios realizados
+- **`apps/web/src/components/layout/Footer.tsx`:** fondo `bg-gradient-to-b from-cee-red to-cee-red-dark` → `bg-gradient-to-b from-neutral-900 to-cee-ink`
+- **`apps/web/src/pages/contact/ContactPage.tsx`:** envuelto en `bg-surface-cream` (full-bleed); banner de "cargando curso" cambiado de `bg-muted` a `bg-white` (mejor contraste sobre crema); `shadow-md` explícito en las `Card` del formulario, info de contacto y mapa
+
+#### Archivos modificados
+- ✅ `apps/web/src/components/layout/Footer.tsx`
+- ✅ `apps/web/src/pages/contact/ContactPage.tsx`
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ `curl` a `/contacto` responde `200`
+- ✅ No se editó ningún archivo de `components/ui/`
+- ⚠️ Sin `chromium-cli`/Playwright en este entorno; se recomienda verificación visual manual en navegador
+
+---
+
+### ✅ Iniciativa F — Perfil con foto + pestaña "Profesores" (Cambio 6)
+
+**Estado:** Completada
+**Fecha:** 2026-06-25
+
+#### Objetivo
+"Mi Perfil" con avatar (foto o iniciales de respaldo); pestaña "Profesores" en `brand.primary` que abre un overlay accesible con tarjetas de docentes; cada tarjeta navega a un perfil completo (`/profesores/:slug`); logout reubicado a la derecha del nuevo bloque.
+
+#### Decisión sobre O4 (bloqueo abierto): se resuelve de forma pragmática, no se bloquea la tarea
+El doc marcaba O4 ("definir el contrato del tipo `Teacher` con backend") como bloqueante. Se decidió seguir el mismo criterio que ya usa el propio repo para casos análogos (`moodleCourseId: number | null; //TODO(backend): confirmar contrato`, en `Course`): se define `Teacher` ahora, mock-first, con un comentario `//TODO(backend): confirmar contrato` en el tipo, en vez de detener la tarea hasta tener sign-off formal del backend. Es reversible: si el contrato real difiere, solo cambia el mapeo `formatTeacher` en `teachers.service.ts`.
+
+#### Decisión: `Teacher extends Instructor` (no un tipo paralelo desconectado)
+`Instructor` (`id`, `name`, `title`, `bio`, `photoUrl`) ya existía y se usa en `Course.instructors` y en `TeacherCard` (Detalle de curso). En vez de crear `Teacher` desde cero, se definió como **superset** de `Instructor` (+ `slug`, `upcomingEvents`). Esto cumple literalmente la tarea del doc ("reutilizar la Plana Docente del detalle de curso consumiendo el mismo tipo Teacher") sin tocar `Course`, `courses.service.ts` ni los 8 fixtures de `instructors.mock.ts`: cualquier `Teacher` es asignable donde se espera un `Instructor` (TypeScript permite la asignación porque `Teacher` tiene todos los campos requeridos de `Instructor` y más). `TeacherCard.tsx` se extendió para mostrar el próximo evento **solo si** el objeto recibido lo tiene (`'upcomingEvents' in instructor`), así que su uso existente en Detalle de curso (con `Instructor` puro) no cambia visualmente.
+
+#### Decisión: `mockTeachers` reutiliza `mockInstructors`, no datos nuevos desde cero
+`apps/web/src/mocks/data/teachers.mock.ts` mapea los 8 `mockInstructors` existentes agregando `slug` (vía `slugify`, ya existente en `lib/utils.ts`) y `upcomingEvents` (0–1 evento de ejemplo por docente). Mismas personas en "Plana docente" del curso y en "Profesores" del Navbar — consistente con que es la misma plana docente del CEE.
+
+#### Decisión: `Avatar` propio (sin Radix) vs. `Popover` con Radix
+Para el avatar, no se justificaba una dependencia nueva: es solo una imagen con fallback de iniciales (mismo patrón de `onError` que ya se usa en `BlogCard`). Para el overlay de "Profesores" sí se instaló `@radix-ui/react-popover` (no existía ninguna dependencia de overlay flotante posicionado—`Sheet` es un drawer fijo, no sirve aquí), porque el doc exige explícitamente accesibilidad real (foco, Esc, ARIA) que Radix da gratis y que sería arriesgado reimplementar a mano.
+
+#### Cambios realizados
+- **`packages/types/src/index.ts`:** `TeacherUpcomingEvent`, `Teacher extends Instructor`
+- **`apps/web/src/mocks/data/teachers.mock.ts`** (nuevo): `mockTeachers` derivado de `mockInstructors`
+- **`apps/web/src/services/teachers.service.ts`** (nuevo): `getAll()`, `getBySlug(slug)`, patrón mock/Supabase (tabla futura `teachers`)
+- **`apps/web/src/hooks/useTeachers.ts`, `useTeacher.ts`** (nuevos): lista y detalle, mismo patrón que `useBlogPosts`/`useBlogPost`
+- **`apps/web/src/components/ui/popover.tsx`** (nuevo): primitivo shadcn sobre `@radix-ui/react-popover`
+- **`apps/web/src/components/ui/avatar.tsx`** (nuevo): avatar con fallback de iniciales, sin dependencias nuevas
+- **`apps/web/src/lib/utils.ts`:** nuevo `getInitials(name)`
+- **`apps/web/src/components/layout/TeachersMenu.tsx`** (nuevo): `Popover` con tarjetas de docentes (reutiliza `TeacherCard`), cada una enlaza a `/profesores/:slug`
+- **`apps/web/src/components/course/TeacherCard.tsx`:** prop ahora acepta `Instructor | Teacher`; muestra el próximo evento solo si está presente
+- **`apps/web/src/pages/teachers/TeacherProfilePage.tsx`** (nuevo): perfil completo (`/profesores/:slug`) con foto, bio y lista de próximos eventos
+- **`apps/web/src/constants/routes.ts`:** `TEACHER_PROFILE: '/profesores/:slug'`
+- **`apps/web/src/router/index.tsx`:** ruta `lazy()` + `Suspense` para `TeacherProfilePage`
+- **`apps/web/src/components/layout/Navbar.tsx`:** pestaña `TeachersMenu` (fondo `cee-red`, texto blanco, claramente diferenciada) a la izquierda del botón "Mi Perfil"; "Mi Perfil" ahora muestra `Avatar` (foto del usuario o iniciales); el ícono de logout queda a la derecha de ese bloque (ya lo estaba, solo se confirmó el orden)
+- **`apps/web/src/components/layout/MobileMenu.tsx`:** el `TeachersMenu` del Navbar se oculta en mobile (`md:inline-flex`, sin overlay-en-Sheet, no tenía sentido anidar un Popover dentro de un Sheet); en su lugar, lista plana de profesores con links a su perfil; "Mi Perfil" también con `Avatar`
+
+#### Archivos nuevos
+- ✅ `apps/web/src/mocks/data/teachers.mock.ts`
+- ✅ `apps/web/src/services/teachers.service.ts`
+- ✅ `apps/web/src/hooks/useTeachers.ts`, `useTeacher.ts`
+- ✅ `apps/web/src/components/ui/popover.tsx`, `avatar.tsx`
+- ✅ `apps/web/src/components/layout/TeachersMenu.tsx`
+- ✅ `apps/web/src/pages/teachers/TeacherProfilePage.tsx`
+
+#### Archivos modificados
+- ✅ `packages/types/src/index.ts`
+- ✅ `apps/web/src/mocks/index.ts`
+- ✅ `apps/web/src/lib/utils.ts`
+- ✅ `apps/web/src/components/course/TeacherCard.tsx`
+- ✅ `apps/web/src/components/layout/Navbar.tsx`, `MobileMenu.tsx`
+- ✅ `apps/web/src/constants/routes.ts`, `apps/web/src/router/index.tsx`
+- ✅ `apps/web/package.json` / `pnpm-lock.yaml` (dependencia `@radix-ui/react-popover`)
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ `curl` a `/` y `/profesores/dr-carlos-mendoza` responde `200`
+- ✅ No se editó ningún archivo existente de `components/ui/` (`popover.tsx`/`avatar.tsx` son nuevos)
+- ✅ `Course.instructors` y `courses.service.ts` no se tocaron — sin riesgo de romper Detalle de curso
+- ⚠️ Sin `chromium-cli`/Playwright en este entorno; se recomienda verificar foco/Esc/ARIA del `Popover` manualmente (heredado de Radix, pero conviene confirmar en navegador real)
+
+#### Pendiente
+- Confirmar con backend el contrato real de `Teacher` (O4) cuando exista API; hoy es 100% mock
+- No se creó una página de listado `/profesores` independiente — el "listado" vive en el overlay del Navbar y en `MobileMenu`; si se requiere una página propia, es una extensión menor sobre `teachersService.getAll()`
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones
