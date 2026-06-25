@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, Menu } from 'lucide-react';
 import { MobileMenu } from '@/components/layout/MobileMenu';
-import { TeachersMenu } from '@/components/layout/TeachersMenu';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { navigationLinks } from '@/config/navigation';
@@ -11,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { authService } from '@/services/auth.service';
 import { cn, getInitials } from '@/lib/utils';
-import logoMark from '@/assets/icons/logo2.svg';
+import logoMark from '@/assets/icons/CEE-logo.png';
 import uniLogo from '@/assets/icons/uni-logo.png';
 
 export function Navbar() {
@@ -30,7 +29,11 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-border bg-background">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to={ROUTES.HOME} className="flex items-center gap-3">
-          <img src={logoMark} alt="CEE-FIIS" className="h-10 w-auto" />
+          <img
+            src={logoMark}
+            alt="Centro de Especialización Ejecutiva"
+            className="h-9 w-auto object-contain"
+          />
           <span className="hidden h-8 w-px bg-border sm:block" aria-hidden="true" />
           <img
             src={uniLogo}
@@ -57,10 +60,8 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <TeachersMenu />
-
           <Button asChild variant="outline" size="sm" className="hidden gap-2 md:inline-flex">
-            <Link to={isAuthenticated ? ROUTES.HOME : ROUTES.LOGIN}>
+            <Link to={isAuthenticated ? ROUTES.PROFILE : ROUTES.LOGIN}>
               {isAuthenticated && user ? (
                 <Avatar src={user.avatarUrl} alt={user.name} fallback={getInitials(user.name)} className="h-5 w-5" />
               ) : null}

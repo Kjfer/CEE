@@ -6,6 +6,8 @@ export const ROUTES = {
   BLOG: '/blog',
   BLOG_POST: '/blog/:slug',
   MULTIMEDIA: '/multimedia',
+  PROFESSORS: '/profesores',
+  PROFILE: '/perfil',
   TEACHER_PROFILE: '/profesores/:slug',
   CONTACT: '/contacto',
   LOGIN: '/login',

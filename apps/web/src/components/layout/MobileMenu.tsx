@@ -12,7 +12,6 @@ import {
 import { navigationLinks } from '@/config/navigation';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/hooks/useAuth';
-import { useTeachers } from '@/hooks/useTeachers';
 import { useToast } from '@/hooks/useToast';
 import { authService } from '@/services/auth.service';
 import { getInitials } from '@/lib/utils';
@@ -25,7 +24,6 @@ interface MobileMenuProps {
 
 export function MobileMenu({ open, onClose }: MobileMenuProps) {
   const { isAuthenticated, user } = useAuth();
-  const { teachers } = useTeachers();
   const navigate = useNavigate();
   const { success } = useToast();
 
@@ -58,30 +56,10 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
           ))}
         </nav>
 
-        {teachers.length > 0 && (
-          <div>
-            <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Profesores
-            </p>
-            <nav className="mt-2 flex flex-col gap-1" aria-label="Profesores">
-              {teachers.map((teacher) => (
-                <SheetClose key={teacher.id} asChild>
-                  <Link
-                    to={ROUTES.TEACHER_PROFILE.replace(':slug', teacher.slug)}
-                    className="rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-secondary hover:text-cee-red"
-                  >
-                    {teacher.name}
-                  </Link>
-                </SheetClose>
-              ))}
-            </nav>
-          </div>
-        )}
-
         <div className="mt-auto grid gap-2">
           <SheetClose asChild>
             <Button asChild className="w-full justify-center gap-2">
-              <Link to={isAuthenticated ? ROUTES.HOME : ROUTES.LOGIN}>
+              <Link to={isAuthenticated ? ROUTES.PROFILE : ROUTES.LOGIN}>
                 {isAuthenticated && user ? (
                   <Avatar src={user.avatarUrl} alt={user.name} fallback={getInitials(user.name)} className="h-5 w-5" />
                 ) : null}

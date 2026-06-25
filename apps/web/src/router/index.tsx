@@ -11,6 +11,7 @@ const AboutPage = lazy(() => import('@/pages/about/AboutPage'));
 const BlogPage = lazy(() => import('@/pages/blog/BlogPage'));
 const BlogPostPage = lazy(() => import('@/pages/blog/BlogPostPage'));
 const MultimediaPage = lazy(() => import('@/pages/multimedia/MultimediaPage'));
+const ProfessorsPage = lazy(() => import('@/pages/professors/ProfessorsPage'));
 const TeacherProfilePage = lazy(() => import('@/pages/teachers/TeacherProfilePage'));
 const ContactPage = lazy(() => import('@/pages/contact/ContactPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.BLOG, element: withSuspense(<BlogPage />) },
       { path: ROUTES.BLOG_POST, element: withSuspense(<BlogPostPage />) },
       { path: ROUTES.MULTIMEDIA, element: withSuspense(<MultimediaPage />) },
+      { path: ROUTES.PROFESSORS, element: withSuspense(<ProfessorsPage />) },
       { path: ROUTES.TEACHER_PROFILE, element: withSuspense(<TeacherProfilePage />) },
       { path: ROUTES.CONTACT, element: withSuspense(<ContactPage />) },
       { path: ROUTES.LOGIN, element: withSuspense(<LoginPage />) },
