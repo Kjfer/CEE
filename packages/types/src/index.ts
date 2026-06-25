@@ -92,6 +92,22 @@ export interface User {
   avatarUrl: string;
 }
 
+// ---------- Beneficios y descuentos (perfil del estudiante) ----------
+
+export type BenefitCategory = 'descuento' | 'acceso' | 'servicio';
+
+export interface Benefit {
+  id: string;
+  title: string;
+  description: string;
+  discountLabel: string; // ej. "15% OFF", "Acceso gratuito"
+  category: BenefitCategory;
+  code: string | null;
+  validUntil: string | null; // ISO date
+  isActive: boolean;
+  createdAt: string;
+}
+
 // ---------- Lead / Contacto ----------
 
 export interface ContactLead {
