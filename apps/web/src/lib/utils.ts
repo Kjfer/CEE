@@ -21,6 +21,16 @@ export function formatDateLong(date: string | Date) {
   return longDateFormatter.format(value).toUpperCase();
 }
 
+/** Iniciales de respaldo para avatares sin foto, ej. "Carlos Mendoza" -> "CM". */
+export function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const initials = [parts[0], parts[parts.length - 1]]
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('');
+  return initials.toUpperCase() || '?';
+}
+
 export function slugify(text: string) {
   return text
     .normalize('NFD')

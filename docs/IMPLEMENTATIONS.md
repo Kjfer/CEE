@@ -1854,6 +1854,72 @@ Esa notificación depende de un trigger/función en el backend de Supabase (tabl
 
 ---
 
+### ✅ Iniciativa F — Perfil con foto + pestaña "Profesores" (Cambio 6)
+
+**Estado:** Completada
+**Fecha:** 2026-06-25
+
+#### Objetivo
+"Mi Perfil" con avatar (foto o iniciales de respaldo); pestaña "Profesores" en `brand.primary` que abre un overlay accesible con tarjetas de docentes; cada tarjeta navega a un perfil completo (`/profesores/:slug`); logout reubicado a la derecha del nuevo bloque.
+
+#### Decisión sobre O4 (bloqueo abierto): se resuelve de forma pragmática, no se bloquea la tarea
+El doc marcaba O4 ("definir el contrato del tipo `Teacher` con backend") como bloqueante. Se decidió seguir el mismo criterio que ya usa el propio repo para casos análogos (`moodleCourseId: number | null; //TODO(backend): confirmar contrato`, en `Course`): se define `Teacher` ahora, mock-first, con un comentario `//TODO(backend): confirmar contrato` en el tipo, en vez de detener la tarea hasta tener sign-off formal del backend. Es reversible: si el contrato real difiere, solo cambia el mapeo `formatTeacher` en `teachers.service.ts`.
+
+#### Decisión: `Teacher extends Instructor` (no un tipo paralelo desconectado)
+`Instructor` (`id`, `name`, `title`, `bio`, `photoUrl`) ya existía y se usa en `Course.instructors` y en `TeacherCard` (Detalle de curso). En vez de crear `Teacher` desde cero, se definió como **superset** de `Instructor` (+ `slug`, `upcomingEvents`). Esto cumple literalmente la tarea del doc ("reutilizar la Plana Docente del detalle de curso consumiendo el mismo tipo Teacher") sin tocar `Course`, `courses.service.ts` ni los 8 fixtures de `instructors.mock.ts`: cualquier `Teacher` es asignable donde se espera un `Instructor` (TypeScript permite la asignación porque `Teacher` tiene todos los campos requeridos de `Instructor` y más). `TeacherCard.tsx` se extendió para mostrar el próximo evento **solo si** el objeto recibido lo tiene (`'upcomingEvents' in instructor`), así que su uso existente en Detalle de curso (con `Instructor` puro) no cambia visualmente.
+
+#### Decisión: `mockTeachers` reutiliza `mockInstructors`, no datos nuevos desde cero
+`apps/web/src/mocks/data/teachers.mock.ts` mapea los 8 `mockInstructors` existentes agregando `slug` (vía `slugify`, ya existente en `lib/utils.ts`) y `upcomingEvents` (0–1 evento de ejemplo por docente). Mismas personas en "Plana docente" del curso y en "Profesores" del Navbar — consistente con que es la misma plana docente del CEE.
+
+#### Decisión: `Avatar` propio (sin Radix) vs. `Popover` con Radix
+Para el avatar, no se justificaba una dependencia nueva: es solo una imagen con fallback de iniciales (mismo patrón de `onError` que ya se usa en `BlogCard`). Para el overlay de "Profesores" sí se instaló `@radix-ui/react-popover` (no existía ninguna dependencia de overlay flotante posicionado—`Sheet` es un drawer fijo, no sirve aquí), porque el doc exige explícitamente accesibilidad real (foco, Esc, ARIA) que Radix da gratis y que sería arriesgado reimplementar a mano.
+
+#### Cambios realizados
+- **`packages/types/src/index.ts`:** `TeacherUpcomingEvent`, `Teacher extends Instructor`
+- **`apps/web/src/mocks/data/teachers.mock.ts`** (nuevo): `mockTeachers` derivado de `mockInstructors`
+- **`apps/web/src/services/teachers.service.ts`** (nuevo): `getAll()`, `getBySlug(slug)`, patrón mock/Supabase (tabla futura `teachers`)
+- **`apps/web/src/hooks/useTeachers.ts`, `useTeacher.ts`** (nuevos): lista y detalle, mismo patrón que `useBlogPosts`/`useBlogPost`
+- **`apps/web/src/components/ui/popover.tsx`** (nuevo): primitivo shadcn sobre `@radix-ui/react-popover`
+- **`apps/web/src/components/ui/avatar.tsx`** (nuevo): avatar con fallback de iniciales, sin dependencias nuevas
+- **`apps/web/src/lib/utils.ts`:** nuevo `getInitials(name)`
+- **`apps/web/src/components/layout/TeachersMenu.tsx`** (nuevo): `Popover` con tarjetas de docentes (reutiliza `TeacherCard`), cada una enlaza a `/profesores/:slug`
+- **`apps/web/src/components/course/TeacherCard.tsx`:** prop ahora acepta `Instructor | Teacher`; muestra el próximo evento solo si está presente
+- **`apps/web/src/pages/teachers/TeacherProfilePage.tsx`** (nuevo): perfil completo (`/profesores/:slug`) con foto, bio y lista de próximos eventos
+- **`apps/web/src/constants/routes.ts`:** `TEACHER_PROFILE: '/profesores/:slug'`
+- **`apps/web/src/router/index.tsx`:** ruta `lazy()` + `Suspense` para `TeacherProfilePage`
+- **`apps/web/src/components/layout/Navbar.tsx`:** pestaña `TeachersMenu` (fondo `cee-red`, texto blanco, claramente diferenciada) a la izquierda del botón "Mi Perfil"; "Mi Perfil" ahora muestra `Avatar` (foto del usuario o iniciales); el ícono de logout queda a la derecha de ese bloque (ya lo estaba, solo se confirmó el orden)
+- **`apps/web/src/components/layout/MobileMenu.tsx`:** el `TeachersMenu` del Navbar se oculta en mobile (`md:inline-flex`, sin overlay-en-Sheet, no tenía sentido anidar un Popover dentro de un Sheet); en su lugar, lista plana de profesores con links a su perfil; "Mi Perfil" también con `Avatar`
+
+#### Archivos nuevos
+- ✅ `apps/web/src/mocks/data/teachers.mock.ts`
+- ✅ `apps/web/src/services/teachers.service.ts`
+- ✅ `apps/web/src/hooks/useTeachers.ts`, `useTeacher.ts`
+- ✅ `apps/web/src/components/ui/popover.tsx`, `avatar.tsx`
+- ✅ `apps/web/src/components/layout/TeachersMenu.tsx`
+- ✅ `apps/web/src/pages/teachers/TeacherProfilePage.tsx`
+
+#### Archivos modificados
+- ✅ `packages/types/src/index.ts`
+- ✅ `apps/web/src/mocks/index.ts`
+- ✅ `apps/web/src/lib/utils.ts`
+- ✅ `apps/web/src/components/course/TeacherCard.tsx`
+- ✅ `apps/web/src/components/layout/Navbar.tsx`, `MobileMenu.tsx`
+- ✅ `apps/web/src/constants/routes.ts`, `apps/web/src/router/index.tsx`
+- ✅ `apps/web/package.json` / `pnpm-lock.yaml` (dependencia `@radix-ui/react-popover`)
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ `curl` a `/` y `/profesores/dr-carlos-mendoza` responde `200`
+- ✅ No se editó ningún archivo existente de `components/ui/` (`popover.tsx`/`avatar.tsx` son nuevos)
+- ✅ `Course.instructors` y `courses.service.ts` no se tocaron — sin riesgo de romper Detalle de curso
+- ⚠️ Sin `chromium-cli`/Playwright en este entorno; se recomienda verificar foco/Esc/ARIA del `Popover` manualmente (heredado de Radix, pero conviene confirmar en navegador real)
+
+#### Pendiente
+- Confirmar con backend el contrato real de `Teacher` (O4) cuando exista API; hoy es 100% mock
+- No se creó una página de listado `/profesores` independiente — el "listado" vive en el overlay del Navbar y en `MobileMenu`; si se requiere una página propia, es una extensión menor sobre `teachersService.getAll()`
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones
