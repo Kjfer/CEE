@@ -4,13 +4,13 @@ import { gsap } from 'gsap';
 import type { CourseCategory } from '@cee/types';
 import { CourseCard } from '@/components/shared/CourseCard';
 import { CourseCardSkeleton } from '@/components/shared/CourseCardSkeleton';
-import { CourseCountdown } from '@/components/shared/CourseCountdown';
 import { CourseFilter } from '@/components/shared/CourseFilter';
 import { AboutSection } from '@/components/home/AboutSection';
 import { BlogSection } from '@/components/home/BlogSection';
 import { EventSlider } from '@/components/home/EventSlider';
 import { HomeSideActions } from '@/components/home/HomeSideActions';
 import { SectionAnchors } from '@/components/home/SectionAnchors';
+import { NextStartBadge } from '@/components/shared/NextStartBadge';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
 import { useCourses } from '@/hooks/useCourses';
@@ -69,23 +69,23 @@ export default function HomePage() {
 
       <section
         id="hero"
-        className="relative flex min-h-[85vh] items-center overflow-hidden bg-gradient-to-br from-cee-red-900 via-cee-red-700 to-cee-ink text-white sm:min-h-screen"
+        className="relative isolate flex flex-col overflow-hidden bg-cee-ink text-white sm:min-h-screen sm:flex-row"
       >
-        <div
-          className="absolute inset-y-0 right-0 hidden w-3/5 sm:block sm:[clip-path:polygon(15%_0,100%_0,100%_100%,0_100%)]"
-          style={{ aspectRatio: '16 / 10' }}
-        >
+        {/* Imagen de fondo (desktop): de pared a pared, detrás del bloque de texto.
+            El recorte diagonal vive en el bloque guinda (CSS), no en la imagen. */}
+        <div className="absolute inset-0 hidden sm:block">
           <img
-            src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1920&q=80"
+            src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=75"
             alt=""
-            className="h-full w-full object-cover"
+            className="h-full w-full scale-105 object-cover blur-[1px]"
             loading="eager"
             fetchPriority="high"
           />
-          <div className="absolute inset-0 bg-gradient-to-tr from-cee-ink/70 via-cee-red-800/45 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-cee-ink/20 via-transparent to-transparent" />
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+        {/* Bloque diagonal guinda: contiene TODO el texto, alineado a la izquierda, sin padding muerto */}
+        <div className="relative z-10 flex w-full flex-col justify-center bg-gradient-to-br from-cee-red-800 via-cee-red-700 to-cee-red-900 px-6 py-14 sm:w-[58%] sm:py-0 sm:pl-10 sm:pr-14 sm:[clip-path:polygon(0_0,100%_0,80%_100%,0_100%)] lg:pl-16 lg:pr-20">
           <div ref={heroRef} className="max-w-xl">
             <h1 className="text-3xl leading-tight sm:text-5xl">
               Especialízate con el Centro de Especialización Ejecutiva
@@ -94,16 +94,7 @@ export default function HomePage() {
               Programas ejecutivos de la FIIS-UNI diseñados para impulsar tu carrera profesional.
             </p>
 
-            {isLoading ? (
-              <div className="mt-6 h-[58px] w-72 animate-pulse rounded-lg bg-white/10" aria-hidden="true" />
-            ) : featuredCourse ? (
-              <div className="mt-6 inline-flex flex-col gap-1.5 rounded-lg bg-white/10 px-4 py-3 backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500">
-                <p className="text-xs font-medium uppercase tracking-widest text-white/70">
-                  Próximo a iniciar: {featuredCourse.title}
-                </p>
-                <CourseCountdown course={featuredCourse} variant="dark" />
-              </div>
-            ) : null}
+            <NextStartBadge course={featuredCourse} isLoading={isLoading} className="mt-6" />
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button asChild size="lg" className="bg-white text-cee-red transition-transform hover:scale-[1.03] hover:bg-white/90">
@@ -119,6 +110,17 @@ export default function HomePage() {
               </Button>
             </div>
           </div>
+        </div>
+
+        {/* Imagen (mobile): debajo del texto, a ancho completo */}
+        <div className="relative h-48 w-full sm:hidden">
+          <img
+            src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=900&q=70"
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-cee-ink/20" />
         </div>
       </section>
 

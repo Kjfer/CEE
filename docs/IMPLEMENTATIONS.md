@@ -1651,6 +1651,55 @@ En vez de una pasada manual de "buscar imports sin uso" (que no previene reincid
 
 ---
 
+## Fase 9 — Plan de mejoras UI/UX (`docs/mejoras-finale/mejoras-finales2.md`)
+
+### ✅ Iniciativa A — Hero / Banner principal (Cambio 1)
+
+**Estado:** Completada
+**Fecha:** 2026-06-24
+**Rama:** `feat/about-section`
+
+#### Objetivo
+El Hero original tenía el corte diagonal aplicado a la imagen (lado derecho), dejando el texto sobre un fondo guinda uniforme sin un "bloque" visualmente contenido — de ahí la sensación de espacio muerto a la izquierda que pedía corregir el documento de mejoras. Se reestructura para que el bloque diagonal guinda sea el contenedor real de todo el texto, flush al borde izquierdo del viewport.
+
+#### Decisión: mover el `clip-path` de la imagen al bloque de texto, en vez de aplicarlo a la imagen
+Técnica: la imagen institucional pasa a ser un fondo `absolute inset-0` de pared a pared (sin recorte propio); el bloque de texto (gradiente `cee-red-800→700→900`) se renderiza **encima** (`z-10`) cubriendo `sm:w-[58%]` con `clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%)`. Como el bloque es opaco y está por delante, su recorte diagonal revela directamente la imagen de fondo en la cuña — mismo efecto visual que antes, pero ahora el corte vive en CSS sobre el contenedor del texto (pedido explícito de la tarea: "recrear el corte diagonal con CSS, en vez de incrustarlo en una imagen"), y el texto queda genuinamente alineado a la izquierda sin padding muerto antes de llegar al bloque.
+
+#### Decisión: layout distinto para mobile, no solo `hidden`/`block` sobre el mismo markup
+En mobile el bloque de texto pasa a `w-full` sin `clip-path` (cubre toda la sección, sin imagen visible detrás), y se agrega una franja de imagen separada (`h-48`, `sm:hidden`) **debajo** del texto — así se cumple el criterio "en mobile el texto va arriba a ancho completo y la imagen va debajo", en vez de simplemente ocultar la imagen en mobile como hacía la versión anterior (`hidden sm:block` sobre el mismo contenedor de imagen).
+
+#### Decisión: `NextStartBadge` como componente reutilizable (no editar `components/ui/badge.tsx`)
+El badge "Próximo a iniciar" + cuenta regresiva vivía como un `<div>` ad-hoc inline dentro del Hero. Se extrajo a `apps/web/src/components/shared/NextStartBadge.tsx`, que **envuelve** el `Badge` de shadcn (no lo edita) con la etiqueta en mayúsculas y reutiliza `CourseCountdown` ya existente. Queda disponible para cualquier otro lugar que necesite destacar "próximo curso a iniciar" (ej. listados), no solo el Hero.
+
+#### Cambios realizados
+- **`apps/web/src/components/shared/NextStartBadge.tsx`** (nuevo): badge reutilizable con estado de carga (skeleton) y estado vacío (`null` si no hay curso destacado)
+- **`apps/web/src/pages/home/HomePage.tsx`:**
+  - Hero reestructurado: imagen de fondo `absolute inset-0` (desktop) sin recorte propio, con leve `blur-[1px]` + overlay de degradado para legibilidad (pedido del doc: "leve desenfoque/overlay"); calidad de imagen reducida (`q=75` desktop / `q=70` mobile) como optimización de payload
+  - Bloque de texto: `clip-path` CSS aplicado al contenedor guinda, `sm:w-[58%]`, flush al borde izquierdo, sin el `mx-auto max-w-7xl` que generaba el espacio muerto percibido
+  - Franja de imagen visible debajo del texto en mobile (`sm:hidden`)
+  - Badge/cuenta regresiva inline reemplazado por `<NextStartBadge course={featuredCourse} isLoading={isLoading} />`
+  - Import de `CourseCountdown` removido de `HomePage.tsx` (ya no se usa directo ahí, vive dentro de `NextStartBadge`)
+
+#### Archivos nuevos
+- ✅ `apps/web/src/components/shared/NextStartBadge.tsx`
+
+#### Archivos modificados
+- ✅ `apps/web/src/pages/home/HomePage.tsx`
+- ✅ `docs/CONTEXT.md` (sección "Componentes Clave" + limpieza de menciones obsoletas a `cartStore`/badge de carrito, ya eliminados desde Fase 2 pero el documento no se había actualizado)
+
+#### Verificación
+- ✅ `pnpm --filter web lint` (`tsc --noEmit`): sin errores
+- ✅ `curl` a `/` responde `200`
+- ✅ No se editó ningún archivo existente de `components/ui/` (el `Badge` de shadcn se reutiliza, no se modifica)
+- ⚠️ Sin `chromium-cli`/Playwright en este entorno; se recomienda verificación visual manual en navegador (375/768/1280px) antes de cerrar la iniciativa del todo
+
+#### Pendiente del plan de mejoras (no parte de esta tarea)
+- Tokens de marca (sección 1 del doc): ya cubiertos en espíritu por la rampa `cee.red.{50..900}` existente en `tailwind.config.ts`; falta definir `surface-cream`/`surface-grey` para las Iniciativas C/E
+- Iniciativa B (Navbar doble logo) — bloqueada parcialmente por O3 (falta SVG oficial del logo de la universidad)
+- Iniciativa D (Multimedia → "Testimonios"), E (Contacto + Footer crema), F (Profesores), G (WhatsApp flotante) — no iniciadas
+
+---
+
 ## Notas de Arquitectura
 
 ### Decisión C — Especializaciones
