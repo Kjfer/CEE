@@ -1,0 +1,48 @@
+import type { Benefit } from '@cee/types';
+
+export const mockAdminBenefits: Benefit[] = [
+  {
+    id: 'ben001',
+    title: 'Descuento por ser miembro CEE',
+    description: '15% de descuento en tu próxima especialización ejecutiva.',
+    discountLabel: '15% OFF',
+    category: 'descuento',
+    code: 'CEE-MIEMBRO',
+    validUntil: '2026-12-31',
+    isActive: true,
+    createdAt: '2026-01-10T10:00:00Z',
+  },
+  {
+    id: 'ben002',
+    title: 'Acceso a biblioteca virtual UNI',
+    description: 'Acceso gratuito al repositorio digital y bases de datos académicas de la UNI.',
+    discountLabel: 'Acceso gratuito',
+    category: 'acceso',
+    code: null,
+    validUntil: null,
+    isActive: true,
+    createdAt: '2026-01-10T10:00:00Z',
+  },
+  {
+    id: 'ben003',
+    title: 'Certificación digital sin costo adicional',
+    description: 'Tu certificado digital verificable no tiene costo extra al finalizar el programa.',
+    discountLabel: 'Incluido',
+    category: 'servicio',
+    code: null,
+    validUntil: null,
+    isActive: true,
+    createdAt: '2026-01-10T10:00:00Z',
+  },
+  {
+    id: 'ben004',
+    title: 'Asesoría de carrera personalizada',
+    description: 'Una sesión gratuita de orientación profesional con nuestro equipo de admisión.',
+    discountLabel: '1 sesión gratis',
+    category: 'servicio',
+    code: 'CEE-ASESORIA',
+    validUntil: '2026-12-31',
+    isActive: true,
+    createdAt: '2026-02-01T10:00:00Z',
+  },
+];

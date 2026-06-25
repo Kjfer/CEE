@@ -6,6 +6,7 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
+  Gift,
   LayoutDashboard,
   LogOut,
 } from 'lucide-react';
@@ -14,10 +15,11 @@ import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/store/authStore';
 
 const NAV_ITEMS: readonly { label: string; path: string; icon: React.ElementType }[] = [
-  { label: 'Dashboard',     path: '/',          icon: LayoutDashboard },
-  { label: 'Cursos',        path: '/cursos',     icon: BookOpen },
-  { label: 'Ventas',        path: '/ventas',     icon: BarChart2 },
-  { label: 'Asistente CEE', path: '/asistente',  icon: Bot },
+  { label: 'Dashboard',     path: '/',           icon: LayoutDashboard },
+  { label: 'Cursos',        path: '/cursos',      icon: BookOpen },
+  { label: 'Beneficios',    path: '/beneficios',  icon: Gift },
+  { label: 'Ventas',        path: '/ventas',      icon: BarChart2 },
+  { label: 'Asistente CEE', path: '/asistente',   icon: Bot },
 ];
 
 export function Sidebar() {

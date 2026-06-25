@@ -7,6 +7,8 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const CoursesListPage = lazy(() => import('@/pages/CoursesListPage'));
 const CourseFormPage = lazy(() => import('@/pages/CourseFormPage'));
+const BenefitsListPage = lazy(() => import('@/pages/BenefitsListPage'));
+const BenefitFormPage = lazy(() => import('@/pages/BenefitFormPage'));
 const SalesPage = lazy(() => import('@/pages/SalesPage'));
 const SecretariaChat = lazy(() => import('@/pages/SecretariaChat'));
 const AccessDeniedPage = lazy(() => import('@/pages/AccessDeniedPage'));
@@ -29,6 +31,9 @@ export const router = createBrowserRouter([
           { path: '/cursos', element: withSuspense(<CoursesListPage />) },
           { path: '/cursos/nuevo', element: withSuspense(<CourseFormPage />) },
           { path: '/cursos/:id/editar', element: withSuspense(<CourseFormPage />) },
+          { path: '/beneficios', element: withSuspense(<BenefitsListPage />) },
+          { path: '/beneficios/nuevo', element: withSuspense(<BenefitFormPage />) },
+          { path: '/beneficios/:id/editar', element: withSuspense(<BenefitFormPage />) },
           { path: '/ventas', element: withSuspense(<SalesPage />) },
           { path: '/asistente', element: withSuspense(<SecretariaChat />) },
         ],
