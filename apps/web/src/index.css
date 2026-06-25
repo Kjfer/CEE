@@ -143,3 +143,10 @@
   background-image: radial-gradient(circle at 1px 1px, rgba(104, 34, 34, 0.08) 1px, transparent 0);
   background-size: 22px 22px;
 }
+
+/* Misma textura de puntos, en blanco translúcido, para los encabezados con
+   degradado guinda/oscuro (PageHeader) — aporta profundidad sin tocar el color. */
+.bg-dot-pattern-dark {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.07) 1px, transparent 0);
+  background-size: 24px 24px;
+}

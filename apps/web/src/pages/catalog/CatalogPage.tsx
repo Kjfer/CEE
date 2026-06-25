@@ -5,6 +5,7 @@ import { FilterSidebar } from '@/components/catalog/FilterSidebar';
 import type { FilterState } from '@/components/catalog/FilterSidebar';
 import { PaginationControls } from '@/components/catalog/PaginationControls';
 import { CourseCard } from '@/components/shared/CourseCard';
+import { PageHeader } from '@/components/shared/PageHeader';
 import {
   Sheet,
   SheetContent,
@@ -12,6 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { ROUTES } from '@/constants/routes';
 import { coursesService } from '@/services/courses.service';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -167,141 +169,143 @@ export default function CatalogPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      {/* Encabezado */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Programas</h1>
-        <p className="mt-2 text-muted-foreground">
-          Explora nuestra oferta académica y encuentra el programa que impulse tu carrera.
-        </p>
-      </div>
+    <>
+      <PageHeader
+        eyebrow="CEE-FIIS"
+        title="Programas"
+        description="Explora nuestra oferta académica y encuentra el programa que impulse tu carrera."
+        breadcrumb={[{ label: 'Inicio', path: ROUTES.HOME }, { label: 'Programas' }]}
+        size="md"
+      />
 
-      {/* Barra de búsqueda + ordenamiento + botón filtros mobile */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Buscador */}
-        <div className="relative flex-1 sm:max-w-sm">
-          <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        {/* Barra de búsqueda + ordenamiento + botón filtros mobile */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Buscador */}
+          <div className="relative flex-1 sm:max-w-sm">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+              />
+            </svg>
+            <input
+              id="catalog-search"
+              type="search"
+              placeholder="Buscar por título o descripción…"
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-cee-red focus:border-cee-red"
             />
-          </svg>
-          <input
-            id="catalog-search"
-            type="search"
-            placeholder="Buscar por título o descripción…"
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-cee-red focus:border-cee-red"
-          />
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Ordenamiento */}
+            <select
+              id="catalog-sort"
+              value={sortBy}
+              onChange={(e) => handleSort(e.target.value as SortOption)}
+              className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-cee-red focus:border-cee-red"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Botón filtros (solo mobile) */}
+            <Sheet open={isMobileFilterOpen} onOpenChange={setIsMobileFilterOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:border-cee-red hover:text-cee-red md:hidden"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Filtros
+                  {(hasActiveFilters || isDirty) && (
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-cee-red text-[10px] font-bold text-white">
+                      !
+                    </span>
+                  )}
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 overflow-y-auto">
+                <SheetHeader className="mb-4">
+                  <SheetTitle>Filtros</SheetTitle>
+                </SheetHeader>
+                <FilterSidebar
+                  draft={draftFilters}
+                  isDirty={isDirty}
+                  onDraftChange={setDraftFilters}
+                  onApply={handleApply}
+                  onClear={handleClearFilters}
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Ordenamiento */}
-          <select
-            id="catalog-sort"
-            value={sortBy}
-            onChange={(e) => handleSort(e.target.value as SortOption)}
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-cee-red focus:border-cee-red"
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+        {/* Layout principal: sidebar desktop + grid */}
+        <div className="flex gap-8">
+          {/* Sidebar (solo desktop) */}
+          <div className="hidden w-56 shrink-0 md:block">
+            <FilterSidebar
+              draft={draftFilters}
+              isDirty={isDirty}
+              onDraftChange={setDraftFilters}
+              onApply={handleApply}
+              onClear={handleClearFilters}
+            />
+          </div>
 
-          {/* Botón filtros (solo mobile) */}
-          <Sheet open={isMobileFilterOpen} onOpenChange={setIsMobileFilterOpen}>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:border-cee-red hover:text-cee-red md:hidden"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                Filtros
-                {(hasActiveFilters || isDirty) && (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-cee-red text-[10px] font-bold text-white">
-                    !
-                  </span>
-                )}
-              </button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 overflow-y-auto">
-              <SheetHeader className="mb-4">
-                <SheetTitle>Filtros</SheetTitle>
-              </SheetHeader>
-              <FilterSidebar
-                draft={draftFilters}
-                isDirty={isDirty}
-                onDraftChange={setDraftFilters}
-                onApply={handleApply}
-                onClear={handleClearFilters}
-              />
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
-
-      {/* Layout principal: sidebar desktop + grid */}
-      <div className="flex gap-8">
-        {/* Sidebar (solo desktop) */}
-        <div className="hidden w-56 shrink-0 md:block">
-          <FilterSidebar
-            draft={draftFilters}
-            isDirty={isDirty}
-            onDraftChange={setDraftFilters}
-            onApply={handleApply}
-            onClear={handleClearFilters}
-          />
-        </div>
-
-        {/* Contenido */}
-        <div className="min-w-0 flex-1">
-          {isLoading ? (
-            <LoadingGrid />
-          ) : error ? (
-            <p className="py-16 text-center text-sm text-destructive">{error}</p>
-          ) : filtered.length === 0 ? (
-            <EmptyState onClear={handleClearFilters} hasFilters={hasActiveFilters} />
-          ) : (
-            <>
-              {/* Contador siempre visible */}
-              <p className="mb-4 text-sm text-muted-foreground">
-                Mostrando{' '}
-                <span className="font-medium text-foreground">
-                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}
-                </span>{' '}
-                de{' '}
-                <span className="font-medium text-foreground">{filtered.length}</span>{' '}
-                resultado{filtered.length !== 1 ? 's' : ''}
-              </p>
-              <div className="mb-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {paginated.map((course) => (
-                  <CourseCard key={course.id} course={course} />
-                ))}
-              </div>
-              <PaginationControls
-                currentPage={safePage}
-                totalPages={totalPages}
-                totalItems={filtered.length}
-                pageSize={PAGE_SIZE}
-                onPageChange={setPage}
-              />
-            </>
-          )}
+          {/* Contenido */}
+          <div className="min-w-0 flex-1">
+            {isLoading ? (
+              <LoadingGrid />
+            ) : error ? (
+              <p className="py-16 text-center text-sm text-destructive">{error}</p>
+            ) : filtered.length === 0 ? (
+              <EmptyState onClear={handleClearFilters} hasFilters={hasActiveFilters} />
+            ) : (
+              <>
+                {/* Contador siempre visible */}
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Mostrando{' '}
+                  <span className="font-medium text-foreground">
+                    {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}
+                  </span>{' '}
+                  de{' '}
+                  <span className="font-medium text-foreground">{filtered.length}</span>{' '}
+                  resultado{filtered.length !== 1 ? 's' : ''}
+                </p>
+                <div className="mb-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {paginated.map((course) => (
+                    <CourseCard key={course.id} course={course} />
+                  ))}
+                </div>
+                <PaginationControls
+                  currentPage={safePage}
+                  totalPages={totalPages}
+                  totalItems={filtered.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={setPage}
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

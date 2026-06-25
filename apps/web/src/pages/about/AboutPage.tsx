@@ -2,6 +2,8 @@ import { Award, Users, Lightbulb, Target } from 'lucide-react';
 import { ValueCard } from '@/components/about/ValueCard';
 import { StatsCounter } from '@/components/shared/StatsCounter';
 import { InstitutionalLogos } from '@/components/shared/InstitutionalLogos';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { ROUTES } from '@/constants/routes';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const VALUES = [
@@ -36,21 +38,21 @@ export default function AboutPage() {
 
   return (
     <>
-      <section className="border-b-4 border-cee-gray bg-gradient-to-br from-cee-red-900 via-cee-red-700 to-cee-ink text-white">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-          <h1 className="text-4xl leading-tight sm:text-5xl">
-            Centro de Especialización Ejecutiva
-          </h1>
-          <p className="mt-3 text-xl font-semibold italic text-white/95 sm:text-2xl">
-            "Impulsa tu carrera, lidera tu futuro"
-          </p>
-          <p className="mt-4 text-lg text-white/90">
-            Formando líderes y profesionales a través de educación ejecutiva de primer nivel desde
-            1999, en alianza con la Universidad Nacional de Ingeniería (UNI) y la Facultad de
-            Ingeniería Industrial y de Sistemas (FIIS)
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow="CEE-FIIS"
+        title="Centro de Especialización Ejecutiva"
+        breadcrumb={[{ label: 'Inicio', path: ROUTES.HOME }, { label: 'Nosotros' }]}
+        size="md"
+      >
+        <p className="mt-2 text-lg font-semibold italic text-white/95 sm:text-xl">
+          "Impulsa tu carrera, lidera tu futuro"
+        </p>
+        <p className="mt-3 max-w-2xl text-base text-white/90 sm:text-lg">
+          Formando líderes y profesionales a través de educación ejecutiva de primer nivel desde
+          1999, en alianza con la Universidad Nacional de Ingeniería (UNI) y la Facultad de
+          Ingeniería Industrial y de Sistemas (FIIS)
+        </p>
+      </PageHeader>
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-8">

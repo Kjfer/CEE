@@ -87,17 +87,21 @@ export default function HomePage() {
         {/* Bloque diagonal guinda: contiene TODO el texto, alineado a la izquierda, sin padding muerto */}
         <div className="relative z-10 flex w-full flex-col justify-center bg-gradient-to-br from-cee-red-800 via-cee-red-700 to-cee-red-900 px-6 py-14 sm:w-[58%] sm:py-0 sm:pl-10 sm:pr-14 sm:[clip-path:polygon(0_0,100%_0,80%_100%,0_100%)] lg:pl-16 lg:pr-20">
           <div ref={heroRef} className="max-w-xl">
-            <h1 className="text-3xl leading-tight sm:text-5xl">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+              <span className="h-px w-6 bg-white/50" aria-hidden="true" />
+              CEE-FIIS · Desde 1999
+            </p>
+            <h1 className="mt-2 text-3xl leading-tight sm:text-4xl">
               Especialízate con el Centro de Especialización Ejecutiva
             </h1>
-            <p className="mt-4 text-base text-white/85 sm:text-lg">
+            <p className="mt-3 text-base text-white/85 sm:text-lg">
               Programas ejecutivos de la FIIS-UNI diseñados para impulsar tu carrera profesional.
             </p>
 
-            <NextStartBadge course={featuredCourse} isLoading={isLoading} className="mt-6" />
+            <NextStartBadge course={featuredCourse} isLoading={isLoading} className="mt-5" />
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button asChild size="lg" className="bg-white text-cee-red transition-transform hover:scale-[1.03] hover:bg-white/90">
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Button asChild size="lg" className="bg-white text-cee-red shadow-lg shadow-cee-ink/20 transition-transform hover:scale-[1.03] hover:bg-white/90">
                 <Link to={ROUTES.CONTACT}>Inscríbete ahora</Link>
               </Button>
               <Button
