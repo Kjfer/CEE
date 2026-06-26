@@ -23,6 +23,21 @@ function validateLead(data: Omit<ContactLead, 'id' | 'createdAt'>): void {
   }
 }
 
+/**
+ * Datos crudos que captura el formulario de la landing del programa. A diferencia
+ * de ContactLead, no incluye `subject`/`message` (se autogeneran a partir del curso).
+ */
+export interface LandingLeadInput {
+  name: string;
+  email: string;
+  phone?: string | null;
+  company?: string | null;
+  position?: string | null;
+  source?: string; // p. ej. 'sidebar' | 'modal' | 'cta'
+  courseId?: string | null;
+  courseTitle?: string | null;
+}
+
 export const contactService = {
   async send(data: Omit<ContactLead, 'id' | 'createdAt'>): Promise<ApiResponse<ContactLead>> {
     validateLead(data);
@@ -45,11 +60,45 @@ export const contactService = {
       subject: data.subject,
       course_interest: data.courseInterest,
       message: data.message,
+      company: data.company ?? null,
+      position: data.position ?? null,
+      source: data.source ?? null,
     });
 
     if (error) {
       throw new Error('No se pudo enviar el mensaje. Intenta nuevamente.');
     }
     return { data: { ...data, id: '', createdAt: new Date().toISOString() } };
+  },
+
+  /**
+   * Captura un lead desde la landing del programa. Autogenera `subject` y `message`
+   * (columnas NOT NULL en contact_leads) a partir del curso, y persiste los campos
+   * extra (empresa, cargo, source) de forma aditiva.
+   */
+  async sendLandingLead(input: LandingLeadInput): Promise<ApiResponse<ContactLead>> {
+    const subject = input.courseTitle
+      ? `Inscripción: ${input.courseTitle}`
+      : 'Solicitud de información de programa';
+
+    const messageParts = [
+      `Lead capturado desde la landing del programa${input.courseTitle ? ` "${input.courseTitle}"` : ''}.`,
+    ];
+    if (input.company) messageParts.push(`Empresa: ${input.company}.`);
+    if (input.position) messageParts.push(`Cargo: ${input.position}.`);
+    if (input.source) messageParts.push(`Origen: ${input.source}.`);
+    const message = messageParts.join(' ');
+
+    return this.send({
+      name: input.name,
+      email: input.email,
+      phone: input.phone ?? null,
+      subject,
+      message,
+      courseInterest: input.courseId ?? null,
+      company: input.company ?? null,
+      position: input.position ?? null,
+      source: input.source ?? null,
+    });
   },
 };

@@ -71,8 +71,20 @@
     @apply border-border;
   }
 
+  /*
+   * Escala base de la UI (design system rem-based). Antes crecía hasta 18px en
+   * pantallas anchas, lo que hacía ver todo muy grande. Ahora es compacta:
+   * 16px en móvil/tablet (legible y sin zoom de inputs en iOS) y 14px en
+   * desktop, donde se percibía sobredimensionada. Ajustable en 1px si se desea.
+   */
   html {
-    font-size: clamp(16px, 15.5px + 0.2vw, 18px);
+    font-size: 16px;
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      font-size: 14px;
+    }
   }
 
   body {

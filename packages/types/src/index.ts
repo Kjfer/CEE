@@ -118,6 +118,9 @@ export interface ContactLead {
   subject: string;
   courseInterest: string | null;
   message: string;
+  company?: string | null;
+  position?: string | null;
+  source?: string | null;
   createdAt: string;
 }
 

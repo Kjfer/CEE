@@ -1,18 +1,50 @@
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Users } from 'lucide-react';
+import { ArrowRight, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { CourseBenefitsList } from '@/components/course/CourseBenefitsList';
 import { CourseRatingStars } from '@/components/course/CourseRatingStars';
-import { CourseSidebar } from '@/components/course/CourseSidebar';
-import { SyllabusAccordion } from '@/components/course/SyllabusAccordion';
-import { TeacherCard } from '@/components/course/TeacherCard';
+import {
+  InscriptionForm,
+  INSCRIPTION_ANCHOR_ID,
+  LandingCertificate,
+  LandingCtaBanner,
+  LandingFaq,
+  LandingInstructors,
+  LandingOutcomes,
+  LandingQuickFacts,
+  LandingSection,
+  LandingStats,
+  LandingStudentProfile,
+  LandingSyllabus,
+  LandingTestimonials,
+  LandingValueSummary,
+  MobileStickyCta,
+  scrollToAnchor,
+  scrollToInscription,
+} from '@/components/course/landing';
 import { ROUTES } from '@/constants/routes';
 import { useCourseDetail } from '@/hooks/useCourseDetail';
+import { formatPrice } from '@/lib/utils';
 
 export default function CoursePage() {
   const { slug } = useParams<{ slug: string }>();
   const { course, isLoading, error } = useCourseDetail(slug);
+
+  // Al cargar, desplazar a cualquier ancla del hash (#inscripcion enfoca el form; #contenido y demás solo hacen scroll).
+  useEffect(() => {
+    if (!course) return;
+    const anchor = window.location.hash.slice(1);
+    if (!anchor) return;
+    const timer = window.setTimeout(() => {
+      if (anchor === INSCRIPTION_ANCHOR_ID) {
+        scrollToInscription();
+      } else {
+        scrollToAnchor(anchor);
+      }
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [course]);
 
   if (isLoading) {
     return (
@@ -31,7 +63,6 @@ export default function CoursePage() {
   }
 
   const instructorNames = course.instructors.map((instructor) => instructor.name).join(', ');
-  const benefits = [...course.benefits, ...course.graduateProfile];
 
   return (
     <>
@@ -72,41 +103,90 @@ export default function CoursePage() {
             Dictado por <span className="font-medium text-white">{instructorNames}</span>
           </p>
         )}
+
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={scrollToInscription}
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-bold text-cee-red transition-transform hover:scale-[1.02]"
+          >
+            Inscribirme ahora
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <div className="flex items-baseline gap-2 text-white">
+            <span className="text-xl font-extrabold">{formatPrice(course.price)}</span>
+            {course.originalPrice && (
+              <span className="text-sm text-white/60 line-through">
+                {formatPrice(course.originalPrice)}
+              </span>
+            )}
+          </div>
+        </div>
       </PageHeader>
 
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-3">
-          <div className="space-y-10 lg:col-span-2">
-            <p className="text-lg text-muted-foreground">{course.description}</p>
+      <div className="mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8 lg:pb-12">
+        <LandingQuickFacts course={course} />
 
-            {benefits.length > 0 && <CourseBenefitsList items={benefits} />}
+        <div className="mt-8 grid gap-8 lg:grid-cols-3">
+          <div className="space-y-12 lg:col-span-2">
+            <LandingSection id="informacion" disableReveal>
+              <p className="text-base leading-relaxed text-muted-foreground">
+                {course.description}
+              </p>
+            </LandingSection>
 
-            <div>
-              <h2 className="text-xl font-semibold">Contenido del curso</h2>
-              <div className="mt-3">
-                <SyllabusAccordion modules={course.syllabus} />
-              </div>
-            </div>
+            <LandingSection>
+              <LandingOutcomes items={course.benefits} />
+            </LandingSection>
 
-            {course.instructors.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold">Plana docente</h2>
-                <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                  {course.instructors.map((instructor) => (
-                    <TeacherCard key={instructor.id} instructor={instructor} />
-                  ))}
-                </div>
-              </div>
-            )}
+            <LandingSection>
+              <LandingStats course={course} />
+            </LandingSection>
+
+            <LandingSection>
+              <LandingStudentProfile graduateProfile={course.graduateProfile} />
+            </LandingSection>
+
+            <LandingSection id="contenido">
+              <LandingSyllabus modules={course.syllabus} />
+            </LandingSection>
+
+            <LandingSection>
+              <LandingInstructors instructors={course.instructors} />
+            </LandingSection>
+
+            <LandingSection>
+              <LandingCertificate course={course} />
+            </LandingSection>
+
+            <LandingSection>
+              <LandingTestimonials />
+            </LandingSection>
           </div>
 
           <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-24">
-              <CourseSidebar course={course} />
+            <div id={INSCRIPTION_ANCHOR_ID} className="scroll-mt-24 lg:sticky lg:top-24">
+              <InscriptionForm course={course} source="sidebar" />
             </div>
           </div>
         </div>
-      </section>
+
+        <div className="mt-12 space-y-12">
+          <LandingSection>
+            <LandingValueSummary course={course} />
+          </LandingSection>
+
+          <LandingSection>
+            <LandingCtaBanner course={course} />
+          </LandingSection>
+
+          <LandingSection>
+            <LandingFaq />
+          </LandingSection>
+        </div>
+      </div>
+
+      <MobileStickyCta course={course} />
     </>
   );
 }
