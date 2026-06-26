@@ -14,9 +14,9 @@ export function CourseCard({ course }: CourseCardProps) {
   const navigate = useNavigate();
   const courseUrl = ROUTES.COURSE.replace(':slug', course.slug);
 
-  /** Navega al formulario de contacto/registro con el curso preseleccionado */
+  /** Navega a la landing del programa anclando al formulario de inscripción */
   const handleInscribirse = () => {
-    navigate(buildInscripcionUrl(course.id));
+    navigate(buildInscripcionUrl(course.slug));
   };
 
   return (
