@@ -1,17 +1,14 @@
-import { useLocation } from "react-router-dom";
+import clsx from "clsx";
 import { CONTACT_INFO } from "@/constants/contact.constants";
 import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
-import { ROUTES } from "@/constants/routes";
-import { cn } from "@/lib/utils";
 import { useChatStore } from "@/store/chatStore";
+import { useLayoutStore } from "@/store/layoutStore";
 
-import clsx from "clsx";
-
+// Orden de apilamiento de elementos flotantes: MobileStickyCta (z-40) < WhatsAppFab (z-50) < CeciFab/ChatPanel (z-[10000]).
 export function WhatsAppFab() {
-  const { pathname } = useLocation();
-  const isHome = pathname === ROUTES.HOME;
   const highlightWhatsApp = useChatStore((s) => s.highlightWhatsApp);
   const chatOpen = useChatStore((s) => s.isOpen);
+  const hasBottomBar = useLayoutStore((s) => s.hasBottomBar);
 
   return (
     <a
@@ -21,7 +18,9 @@ export function WhatsAppFab() {
       aria-label="Escríbenos por WhatsApp"
       className={clsx(
         "fixed z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:scale-100",
-        chatOpen ? "bottom-6 left-6" : "bottom-6 right-6",
+        // Elevar sobre la barra de CTA móvil cuando exista; en desktop siempre bottom-6.
+        hasBottomBar ? "bottom-24 lg:bottom-6" : "bottom-6",
+        chatOpen ? "left-6" : "right-6",
         highlightWhatsApp && "animate-ceci-wa-pulse",
       )}
     >

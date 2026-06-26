@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import type { Course } from '@cee/types';
 import { ArrowRight } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { useLayoutStore } from '@/store/layoutStore';
 import { scrollToInscription } from './landing-utils';
 
 interface MobileStickyCtaProps {
@@ -9,6 +11,14 @@ interface MobileStickyCtaProps {
 
 /** CTA fijo inferior (solo móvil) que desplaza al formulario de inscripción de la misma página. */
 export function MobileStickyCta({ course }: MobileStickyCtaProps) {
+  const setHasBottomBar = useLayoutStore((s) => s.setHasBottomBar);
+
+  // Avisa a los FAB flotantes (WhatsApp / chatbot) para que se eleven en móvil y no tapen el CTA.
+  useEffect(() => {
+    setHasBottomBar(true);
+    return () => setHasBottomBar(false);
+  }, [setHasBottomBar]);
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 p-3 shadow-2xl backdrop-blur lg:hidden">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-1">

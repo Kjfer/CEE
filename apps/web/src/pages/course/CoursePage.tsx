@@ -20,6 +20,7 @@ import {
   LandingTestimonials,
   LandingValueSummary,
   MobileStickyCta,
+  scrollToAnchor,
   scrollToInscription,
 } from '@/components/course/landing';
 import { ROUTES } from '@/constants/routes';
@@ -30,13 +31,19 @@ export default function CoursePage() {
   const { slug } = useParams<{ slug: string }>();
   const { course, isLoading, error } = useCourseDetail(slug);
 
-  // Si se llega con #inscripcion (botón "Inscribirme"), desplazar al formulario una vez cargado.
+  // Al cargar, desplazar a cualquier ancla del hash (#inscripcion enfoca el form; #contenido y demás solo hacen scroll).
   useEffect(() => {
     if (!course) return;
-    if (window.location.hash === `#${INSCRIPTION_ANCHOR_ID}`) {
-      const timer = window.setTimeout(scrollToInscription, 120);
-      return () => window.clearTimeout(timer);
-    }
+    const anchor = window.location.hash.slice(1);
+    if (!anchor) return;
+    const timer = window.setTimeout(() => {
+      if (anchor === INSCRIPTION_ANCHOR_ID) {
+        scrollToInscription();
+      } else {
+        scrollToAnchor(anchor);
+      }
+    }, 120);
+    return () => window.clearTimeout(timer);
   }, [course]);
 
   if (isLoading) {
@@ -140,7 +147,7 @@ export default function CoursePage() {
               <LandingStudentProfile graduateProfile={course.graduateProfile} />
             </LandingSection>
 
-            <LandingSection>
+            <LandingSection id="contenido">
               <LandingSyllabus modules={course.syllabus} />
             </LandingSection>
 

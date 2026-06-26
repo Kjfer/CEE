@@ -12,4 +12,4 @@ export { LandingFaq } from './LandingFaq';
 export { LandingCtaBanner } from './LandingCtaBanner';
 export { InscriptionForm } from './InscriptionForm';
 export { MobileStickyCta } from './MobileStickyCta';
-export { INSCRIPTION_ANCHOR_ID, scrollToInscription } from './landing-utils';
+export { INSCRIPTION_ANCHOR_ID, scrollToInscription, scrollToAnchor } from './landing-utils';

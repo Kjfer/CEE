@@ -57,7 +57,7 @@ export function CourseCard({ course }: CourseCardProps) {
 
         <div className="flex gap-2">
           <Link
-            to={courseUrl}
+            to={`${courseUrl}#contenido`}
             className="flex-1 rounded-md border-2 border-cee-red px-4 py-2 text-center text-sm font-semibold text-cee-red transition-colors duration-200 hover:bg-cee-red hover:text-white"
           >
             Ver detalles

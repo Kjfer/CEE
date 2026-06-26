@@ -150,7 +150,7 @@ export function InscriptionForm({ course, source = 'landing' }: InscriptionFormP
             </Button>
           </div>
         ) : (
-          <form className="grid gap-3" onSubmit={handleSubmit} noValidate>
+          <form className="grid gap-2.5" onSubmit={handleSubmit} noValidate>
             {/* Honeypot anti-spam: oculto para usuarios, visible para bots. */}
             <div
               className="absolute left-[-9999px] top-auto h-0 w-0 overflow-hidden"
@@ -168,38 +168,41 @@ export function InscriptionForm({ course, source = 'landing' }: InscriptionFormP
               />
             </div>
 
-            <div className="grid gap-1.5">
+            <div className="grid gap-1">
               <Label htmlFor="lead-name">Nombre completo *</Label>
               <Input
                 id="lead-name"
+                className="h-10 lg:h-9"
                 value={values.name}
                 onChange={handleChange('name')}
                 autoComplete="name"
                 aria-invalid={Boolean(errors.name)}
               />
-              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
 
-            <div className="grid gap-1.5">
+            <div className="grid gap-1">
               <Label htmlFor="lead-email">Correo electrónico *</Label>
               <Input
                 id="lead-email"
                 type="email"
                 inputMode="email"
+                className="h-10 lg:h-9"
                 value={values.email}
                 onChange={handleChange('email')}
                 autoComplete="email"
                 aria-invalid={Boolean(errors.email)}
               />
-              {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
             </div>
 
-            <div className="grid gap-1.5">
+            <div className="grid gap-1">
               <Label htmlFor="lead-phone">Teléfono / WhatsApp</Label>
               <Input
                 id="lead-phone"
                 type="tel"
                 inputMode="tel"
+                className="h-10 lg:h-9"
                 value={values.phone}
                 onChange={handleChange('phone')}
                 autoComplete="tel"
