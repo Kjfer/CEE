@@ -3,6 +3,12 @@ import { supabase } from '@/lib/supabase';
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
+// Diagnóstico: confirma en consola cuál rama se usará al cargar el módulo
+console.info(
+  `[notificationsService] modo activo: ${USE_MOCKS ? '📦 MOCK' : '☁️  Supabase real'}`,
+  '| VITE_USE_MOCKS =', import.meta.env.VITE_USE_MOCKS,
+);
+
 const delay = <T>(value: T, ms = 300): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), ms));
 
@@ -113,7 +119,11 @@ export const notificationsService = {
       .from('notifications')
       .select('*')
       .order('created_at', { ascending: false });
-    if (error) throw new Error('No se pudieron cargar las notificaciones.');
+    if (error) {
+      console.error('[notificationsService] getNotifications Supabase error:', error.message, error.code);
+      throw new Error(`No se pudieron cargar las notificaciones: ${error.message}`);
+    }
+    console.debug('[notificationsService] getNotifications OK — filas:', data?.length ?? 0);
     return { data: (data ?? []).map((r) => rowToNotif(r as NotifRow)) };
   },
 
@@ -123,9 +133,12 @@ export const notificationsService = {
     }
     const { count, error } = await supabase
       .from('notifications')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .eq('is_read', false);
-    if (error) throw new Error('Error al obtener el contador.');
+    if (error) {
+      console.error('[notificationsService] getUnreadCount Supabase error:', error.message, error.code);
+      throw new Error(`Error al obtener el contador: ${error.message}`);
+    }
     return { data: count ?? 0 };
   },
 

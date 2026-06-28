@@ -101,7 +101,9 @@ export function NotificationBell() {
     try {
       const res = await notificationsService.getUnreadCount();
       setUnreadCount(res.data);
-    } catch { /* silently ignore */ }
+    } catch (err) {
+      console.error('[NotificationBell] getUnreadCount falló:', err instanceof Error ? err.message : err);
+    }
   }, []);
 
   useEffect(() => {
@@ -116,7 +118,9 @@ export function NotificationBell() {
     setLoadingAll(true);
     notificationsService.getNotifications()
       .then((res) => setNotifications(res.data.slice(0, 10)))
-      .catch(() => {})
+      .catch((err) => {
+        console.error('[NotificationBell] getNotifications falló:', err instanceof Error ? err.message : err);
+      })
       .finally(() => setLoadingAll(false));
   }, [open]);
 

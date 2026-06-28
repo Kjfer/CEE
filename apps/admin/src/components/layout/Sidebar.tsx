@@ -73,7 +73,8 @@ export function Sidebar() {
   const { user } = useAuthStore();
   const location = useLocation();
 
-  const initial = user?.name?.charAt(0).toUpperCase() ?? 'A';
+  const initial    = user?.name?.charAt(0).toUpperCase() ?? 'A';
+  const avatarUrl  = user?.avatarUrl || null;
 
   // Grupo Ventas: está "activo" si cualquier ruta hija coincide
   const isVentasActive = VENTAS_CHILDREN.some(
@@ -221,8 +222,11 @@ export function Sidebar() {
             title="Mi perfil"
             className="mb-2 flex justify-center rounded-lg transition-colors hover:bg-white/15"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/25 text-[13px] font-bold text-white">
-              {initial}
+            <div className="h-8 w-8 overflow-hidden rounded-full bg-white/25">
+              {avatarUrl
+                ? <img src={avatarUrl} alt={user?.name ?? 'Avatar'} className="h-full w-full object-cover" />
+                : <span className="flex h-full w-full items-center justify-center text-[13px] font-bold text-white">{initial}</span>
+              }
             </div>
           </Link>
         ) : (
@@ -230,8 +234,11 @@ export function Sidebar() {
             to="/perfil"
             className="group mb-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/15"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/25 text-[13px] font-bold text-white">
-              {initial}
+            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-white/25">
+              {avatarUrl
+                ? <img src={avatarUrl} alt={user?.name ?? 'Avatar'} className="h-full w-full object-cover" />
+                : <span className="flex h-full w-full items-center justify-center text-[13px] font-bold text-white">{initial}</span>
+              }
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold text-white">{user?.name ?? 'Admin'}</p>

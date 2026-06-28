@@ -1,11 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Bot, Send, User, Zap } from 'lucide-react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Bot, Send, Trash2, User, Zap } from 'lucide-react';
 import type { CourseCategory, CourseModality, StudentSource } from '@cee/types';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { coursesService } from '@/services/coursesService';
 import { salesRecordsService } from '@/services/salesRecordsService';
 import { certificatesService } from '@/services/certificatesService';
 import { studentsService } from '@/services/studentsService';
+import { chatHistoryService } from '@/services/chatHistoryService';
 
 // ─── Groq types ───────────────────────────────────────────────────────────────
 
@@ -92,9 +103,9 @@ const TOOLS = [
           title:         { type: 'string',  description: 'Título completo del curso' },
           category:      { type: 'string',  enum: ['Ingeniería', 'Gestión', 'Tecnología', 'Habilidades Blandas', 'Finanzas'] },
           modality:      { type: 'string',  enum: ['Virtual', 'Presencial', 'Híbrido'] },
-          price:         { type: 'number',  description: 'Precio en soles (S/)' },
+          price:         { type: 'number',  description: 'Precio del curso en soles. Ejemplo: 199' },
           description:   { type: 'string',  description: 'Descripción detallada del curso' },
-          academicHours: { type: 'number',  description: 'Total de horas académicas (opcional)' },
+          academicHours: { type: 'number',  description: 'Total de horas académicas. Ejemplo: 48' },
         },
         required: ['title', 'category', 'modality', 'price', 'description'],
       },
@@ -110,7 +121,7 @@ const TOOLS = [
         properties: {
           studentName: { type: 'string', description: 'Nombre completo del alumno' },
           courseName:  { type: 'string', description: 'Nombre del curso' },
-          amount:      { type: 'number', description: 'Monto pagado en soles (S/)' },
+          amount:      { type: 'number', description: 'Monto pagado en soles. Ejemplo: 199' },
           notes:       { type: 'string', description: 'Notas adicionales (opcional)' },
         },
         required: ['studentName', 'courseName', 'amount'],
@@ -201,7 +212,7 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
       const { data } = await coursesService.createCourse({
         title:               args.title as string,
         description:         args.description as string,
-        price:               Number(args.price),
+        price:               Number(args.price) || 0,  // cast defensivo — llama puede enviar string
         category:            args.category as CourseCategory,
         modality:            args.modality as CourseModality,
         moodleCourseId:      0,
@@ -230,7 +241,7 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
         studentName: args.studentName as string,
         courseId:    matched?.id ?? '',
         courseName:  matched?.title ?? (args.courseName as string),
-        amount:      Number(args.amount),
+        amount:      Number(args.amount) || 0,  // cast defensivo — llama puede enviar string
         status:      'pending',
         notes:       (args.notes as string | null | undefined) ?? null,
       });
@@ -365,13 +376,38 @@ function ToolRunning({ status }: { status: string }) {
   );
 }
 
+// ─── Date separator ───────────────────────────────────────────────────────────
+
+const separatorFmt = new Intl.DateTimeFormat('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+
+function DateSeparator({ date }: { date: Date }) {
+  const today     = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const label =
+    date.toDateString() === today.toDateString()     ? 'Hoy' :
+    date.toDateString() === yesterday.toDateString() ? 'Ayer' :
+    separatorFmt.format(date);
+
+  return (
+    <div className="flex items-center gap-3 py-1">
+      <div className="h-px flex-1 bg-gray-100" />
+      <span className="text-[10px] font-medium text-[#A9A9A9]">{label}</span>
+      <div className="h-px flex-1 bg-gray-100" />
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function SecretariaChat() {
-  const [messages, setMessages] = useState<Message[]>([WELCOME]);
-  const [input, setInput]       = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [toolStatus, setToolStatus] = useState<string | null>(null);
+  const [messages,       setMessages]       = useState<Message[]>([]);
+  const [input,          setInput]          = useState('');
+  const [loading,        setLoading]        = useState(false);
+  const [toolStatus,     setToolStatus]     = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [clearOpen,      setClearOpen]      = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Persistent Groq conversation history (not display state — no re-render needed)
@@ -379,10 +415,45 @@ export default function SecretariaChat() {
     { role: 'system', content: SYSTEM_PROMPT },
   ]);
 
+  // ── Load history on mount ────────────────────────────────────────────────────
+  useEffect(() => {
+    chatHistoryService.getHistory()
+      .then(({ data: history }) => {
+        if (history.length === 0) {
+          setMessages([WELCOME]);
+        } else {
+          const loaded: Message[] = history.map((h) => ({
+            id:      h.id,
+            role:    h.role,
+            content: h.content,
+            ts:      new Date(h.createdAt),
+          }));
+          setMessages(loaded);
+          // Rebuild Groq context so the model remembers the conversation
+          groqHistoryRef.current = [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...loaded.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+          ];
+        }
+      })
+      .catch(() => setMessages([WELCOME]))
+      .finally(() => setHistoryLoading(false));
+  }, []);
+
+  // ── Auto-scroll ──────────────────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, toolStatus]);
 
+  // ── Clear history ────────────────────────────────────────────────────────────
+  const handleClearHistory = async () => {
+    await chatHistoryService.clearHistory();
+    setMessages([WELCOME]);
+    groqHistoryRef.current = [{ role: 'system', content: SYSTEM_PROMPT }];
+    setClearOpen(false);
+  };
+
+  // ── Send message ─────────────────────────────────────────────────────────────
   const send = useCallback(async (text?: string) => {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
@@ -393,7 +464,9 @@ export default function SecretariaChat() {
     setLoading(true);
     setToolStatus(null);
 
-    // Append user turn to the persistent Groq history
+    // Persist user message
+    void chatHistoryService.saveMessage('user', msg);
+
     const history = groqHistoryRef.current;
     history.push({ role: 'user', content: msg });
 
@@ -409,7 +482,6 @@ export default function SecretariaChat() {
         history.push(assistantMsg);
 
         if (choice.finish_reason === 'tool_calls' && assistantMsg.tool_calls?.length) {
-          // Execute each tool and push the result back to history
           for (const call of assistantMsg.tool_calls) {
             const label = TOOL_LABELS[call.function.name] ?? call.function.name;
             setToolStatus(`Ejecutando: ${label}…`);
@@ -425,11 +497,13 @@ export default function SecretariaChat() {
             history.push({ role: 'tool', tool_call_id: call.id, content: result });
           }
           setToolStatus(null);
-          // Loop: send tool results back so Groq generates the final text answer
         } else {
-          // Final text answer
           continueLoop = false;
           const reply = assistantMsg.content ?? 'Acción completada.';
+
+          // Persist assistant reply
+          void chatHistoryService.saveMessage('assistant', reply);
+
           setMessages((prev) => [
             ...prev,
             { id: crypto.randomUUID(), role: 'assistant', content: reply, ts: new Date() },
@@ -437,8 +511,6 @@ export default function SecretariaChat() {
         }
       }
     } catch (err) {
-      // Remove the user message we just pushed to history if there's an error
-      // so it doesn't corrupt future turns
       history.pop();
       setMessages((prev) => [
         ...prev,
@@ -465,7 +537,6 @@ export default function SecretariaChat() {
   const modelLabel = GROQ_MODEL.split('-').slice(0, 3).join('-');
 
   return (
-    // CAMBIO 1: max-w-[800px] centrado, misma altura calculada
     <div
       className="mx-auto flex max-w-[800px] flex-col gap-3"
       style={{ height: 'calc(100vh - 3rem)' }}
@@ -479,19 +550,62 @@ export default function SecretariaChat() {
           <p className="text-sm font-semibold text-white">Asistente CEE-FIIS</p>
           <p className="text-[10px] text-white/60">Gestión de cursos, inscripciones y certificados</p>
         </div>
-        <span className="ml-auto flex items-center gap-1.5 text-xs text-white/70">
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          {modelLabel}
-        </span>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="flex items-center gap-1.5 text-xs text-white/70">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            {modelLabel}
+          </span>
+          <button
+            type="button"
+            onClick={() => setClearOpen(true)}
+            title="Limpiar historial"
+            disabled={historyLoading || messages.length === 0}
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white/70 transition-colors hover:bg-white/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
+
+      {/* ── Alert: confirmar limpieza ── */}
+      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Limpiar historial?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán todos los mensajes de la conversación. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void handleClearHistory()}>
+              Limpiar historial
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Área de mensajes con scroll interno ── */}
       <div className="flex-1 overflow-y-auto rounded-lg bg-white px-5 py-4 shadow-sm">
-        <div className="flex flex-col gap-4">
-          {messages.map((msg) => <Bubble key={msg.id} msg={msg} />)}
-          {loading && (toolStatus ? <ToolRunning status={toolStatus} /> : <TypingDots />)}
-          <div ref={bottomRef} />
-        </div>
+        {historyLoading ? (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm text-[#A9A9A9]">Cargando historial...</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {messages.map((msg, idx) => (
+              <Fragment key={msg.id}>
+                {/* Date separator when the day changes between consecutive messages */}
+                {(idx === 0 || msg.ts.toDateString() !== messages[idx - 1].ts.toDateString()) && (
+                  <DateSeparator date={msg.ts} />
+                )}
+                <Bubble msg={msg} />
+              </Fragment>
+            ))}
+            {loading && (toolStatus ? <ToolRunning status={toolStatus} /> : <TypingDots />)}
+            <div ref={bottomRef} />
+          </div>
+        )}
       </div>
 
       {/* ── Quick actions ── */}
@@ -500,7 +614,7 @@ export default function SecretariaChat() {
           <button
             key={action}
             type="button"
-            disabled={loading}
+            disabled={loading || historyLoading}
             onClick={() => void send(action)}
             className="rounded-full border border-[#682222]/30 bg-white px-3.5 py-1 text-xs font-medium text-[#682222] transition-colors duration-200 hover:bg-[#682222] hover:text-white disabled:opacity-40"
           >
@@ -520,13 +634,13 @@ export default function SecretariaChat() {
           onKeyDown={handleKey}
           rows={2}
           placeholder="Escribe tu consulta... (Enter para enviar, Shift+Enter para nueva línea)"
-          disabled={loading}
+          disabled={loading || historyLoading}
           className="min-h-[52px] flex-1 resize-none rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#682222] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#682222]/40 disabled:opacity-50"
         />
         <button
           type="button"
           onClick={() => void send()}
-          disabled={!input.trim() || loading}
+          disabled={!input.trim() || loading || historyLoading}
           aria-label="Enviar mensaje"
           className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-lg bg-[#682222] text-white transition-colors hover:bg-[#4F1A1A] disabled:cursor-not-allowed disabled:opacity-40"
         >

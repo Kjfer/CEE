@@ -261,11 +261,14 @@ export default function CoursesListPage() {
                       idx % 2 === 0 ? 'bg-white' : 'bg-[#f9f9f9]',
                     )}
                   >
-                    <td
-                      className="truncate px-5 py-3.5 font-medium text-gray-900"
-                      title={course.title}
-                    >
-                      {course.title}
+                    <td className="truncate px-5 py-3.5">
+                      <Link
+                        to={`/cursos/${course.id}`}
+                        title={course.title}
+                        className="font-medium text-gray-900 hover:text-[#682222] hover:underline"
+                      >
+                        {course.title}
+                      </Link>
                     </td>
                     <td className="px-5 py-3.5">
                       <CategoryChip category={course.category} />

@@ -85,7 +85,20 @@ export const profileService = {
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(path, file, { contentType: file.type, upsert: true });
-    if (uploadError) throw new Error('No se pudo subir la imagen.');
+    if (uploadError) {
+      // Detect missing bucket (Supabase returns "Bucket not found" or 404-like messages)
+      const msg = uploadError.message?.toLowerCase() ?? '';
+      const isBucketMissing =
+        msg.includes('not found') ||
+        msg.includes('does not exist') ||
+        msg.includes('bucket') ||
+        (uploadError as { statusCode?: string }).statusCode === '404';
+      throw new Error(
+        isBucketMissing
+          ? 'El bucket de avatares no está configurado. Contacta al administrador.'
+          : `No se pudo subir la imagen: ${uploadError.message}`,
+      );
+    }
 
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
     const avatarUrl = urlData.publicUrl;

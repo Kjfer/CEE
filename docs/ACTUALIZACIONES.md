@@ -1,8 +1,38 @@
 # Actualizaciones CEE-FIIS — Panel Administrativo
 
-> **Última actualización:** junio 2026  
+> **Última actualización:** 28 jun 2026  
 > **Equipo:** IDI / CCAT — Universidad Nacional de Ingeniería  
 > **Proyecto Supabase:** `yusaeqpjnnxrykunzopr`
+
+---
+
+## Últimas actualizaciones — 28 jun 2026
+
+### Módulos completados
+
+- **Perfil y configuración:** foto de perfil con subida a bucket `avatars` de Supabase Storage, cambio de contraseña con verificación, configuración general del CEE persistida en tabla `settings` (6 claves: nombre, teléfono, WhatsApp, correo secretaria, mínimo de alumnos por defecto, días de anticipación).
+- **Historial del Asistente CEE:** conversaciones persistidas en tabla `chat_history`. Carga al montar la página, separadores de fecha ("Hoy" / "Ayer" / fecha corta), botón "Limpiar historial" con AlertDialog de confirmación. Groq history reconstruido desde BD para mantener contexto entre sesiones.
+- **Vista detalle de curso (`/cursos/:id`):** información completa en grid de 2 columnas, plan de estudios (módulos), sílabo embebido con `<embed>` de 600 px + botón "Descargar PDF", cards de instructores. El nombre del curso en la tabla es ahora un link clickeable.
+- **Favicon y título del panel:** `apps/admin/public/favicon.png` (logo CEE) + `<title>CEE-FIIS | Panel Administrativo</title>`.
+- **Nota aclaratoria en Configuración CEE:** texto de ayuda bajo `min_students_default` explicando que cada curso puede tener su propio mínimo independiente.
+
+### Infraestructura
+
+- **RLS policies** revisadas y documentadas para las tablas: `notifications`, `students`, `certificates`, `events`, `event_registrations`, `settings`, `chat_history`.
+- **Edge Function `check-enrollment`:** campo `from:` corregido a `onboarding@resend.dev` (dominio verificado en Resend). Cron activo `0 13 * * *` (8 am hora Perú). Se agregó segundo chequeo `course_confirmed` para notificar cuando un curso alcanza su mínimo el día de inicio.
+- **Bucket `avatars`** en Supabase Storage con política de lectura pública para mostrar fotos en el sidebar sin autenticación adicional.
+- **Groq API key** configurada en `apps/admin/.env` (`VITE_GROQ_API_KEY`). Modelo: `llama-3.3-70b-versatile`.
+- **Diagnóstico de notificaciones:** logs `console.info/error` en `notificationsService` para confirmar en DevTools si el servicio llama a Supabase real o al mock.
+
+### Pendientes
+
+- [ ] Sitio público `apps/web` — próxima fase de QA y deploy.
+- [ ] Integración Moodle LMS vía campo `moodle_user_id` en la tabla `students`.
+- [ ] Sistema de firma digital UNI para el estado `pending_signature` en `certificates`.
+- [ ] Coordinación con equipo bot WhatsApp para links de eventos públicos en `event_registrations`.
+- [ ] Módulo de notificaciones: lectura desde Supabase real ✅ (funcionando con RLS admin).
+
+---
 
 ---
 

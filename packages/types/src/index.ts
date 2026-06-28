@@ -97,6 +97,16 @@ export interface User {
   avatarUrl: string;
 }
 
+// ---------- Historial del chat (Asistente CEE) ----------
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  toolCalls?: unknown;
+  createdAt: string;
+}
+
 // ---------- Configuración del sistema ----------
 
 export interface Setting {

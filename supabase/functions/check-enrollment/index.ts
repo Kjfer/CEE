@@ -163,7 +163,7 @@ serve(async (_req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from:    'CEE-FIIS <notificaciones@cee-fiis.edu.pe>',
+            from:    'CEE-FIIS <onboarding@resend.dev>',
             to:      [SECRETARY_EMAIL],
             subject: `⚠️ Bajo cupo — ${course.title}`,
             html:    buildEmailHtml({
@@ -235,7 +235,7 @@ serve(async (_req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from:    'CEE-FIIS <notificaciones@cee-fiis.edu.pe>',
+            from:    'CEE-FIIS <onboarding@resend.dev>',
             to:      [SECRETARY_EMAIL],
             subject: `✅ Curso confirmado — ${course.title}`,
             html:    buildEmailHtml({

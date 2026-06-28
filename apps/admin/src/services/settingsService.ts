@@ -36,7 +36,12 @@ export const settingsService = {
       .select('*')
       .order('key', { ascending: true });
     if (error) throw new Error('No se pudieron cargar la configuración.');
-    return { data: (data ?? []).map((r) => rowToSetting(r as SettingRow)) };
+    // Si la tabla está vacía (aún no se han guardado settings), usar los valores
+    // por defecto del mock para que el formulario tenga valores iniciales útiles.
+    if (!data || data.length === 0) {
+      return { data: [...mockSettings] };
+    }
+    return { data: data.map((r) => rowToSetting(r as SettingRow)) };
   },
 
   async updateSetting(key: string, value: string): Promise<ApiResponse<Setting>> {

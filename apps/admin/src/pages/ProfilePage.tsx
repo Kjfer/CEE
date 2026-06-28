@@ -35,12 +35,17 @@ function Feedback({ msg }: { msg: { type: 'success' | 'error'; text: string } | 
 
 // ─── Settings KEYS config ─────────────────────────────────────────────────────
 
-const SETTINGS_CONFIG: { key: string; label: string; type?: 'number' }[] = [
+const SETTINGS_CONFIG: { key: string; label: string; type?: 'number'; helpText?: string }[] = [
   { key: 'cee_name',              label: 'Nombre del centro' },
   { key: 'cee_phone',             label: 'Teléfono' },
   { key: 'cee_whatsapp',          label: 'WhatsApp' },
   { key: 'secretary_email',       label: 'Correo de notificaciones' },
-  { key: 'min_students_default',  label: 'Mínimo de alumnos por defecto',    type: 'number' },
+  {
+    key:      'min_students_default',
+    label:    'Mínimo de alumnos por defecto',
+    type:     'number',
+    helpText: 'Este valor se pre-llena al crear un nuevo curso. Cada curso puede tener su propio mínimo diferente.',
+  },
   { key: 'alert_days_default',    label: 'Días de anticipación para alertas', type: 'number' },
 ];
 
@@ -452,6 +457,9 @@ export default function ProfilePage() {
                       }
                       className={inputCls}
                     />
+                    {cfg.helpText && (
+                      <p className="text-[11px] text-[#A9A9A9]">{cfg.helpText}</p>
+                    )}
                   </div>
                 ))}
 
