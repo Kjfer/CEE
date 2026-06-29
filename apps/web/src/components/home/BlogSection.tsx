@@ -14,7 +14,7 @@ export function BlogSection() {
     <>
       <div className="mb-6 flex flex-col gap-1 sm:mb-8">
         <p className="text-xs font-medium uppercase tracking-widest text-cee-red">CEE-FIIS</p>
-        <h2 className="text-2xl sm:text-3xl">Blog</h2>
+        <h2 className="text-2xl font-bold">Blog</h2>
       </div>
 
       {isLoading ? (

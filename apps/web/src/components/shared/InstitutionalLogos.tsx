@@ -9,7 +9,6 @@ interface InstitutionalLogosProps {
 const BACKERS = [
   { name: 'UNI', src: uniLogo },
   { name: 'CEE-FIIS', src: ceeLogo },
-  { name: 'CCAT', src: ccatLogo },
 ];
 
 export function InstitutionalLogos({ className }: InstitutionalLogosProps) {

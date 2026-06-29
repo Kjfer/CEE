@@ -39,8 +39,8 @@ export function CourseCountdown({ course, variant = 'light', className }: Course
   return (
     <div
       className={cn(
-        'flex items-center gap-2 text-sm font-medium',
-        variant === 'dark' ? 'text-white/90' : 'text-muted-foreground',
+        'flex items-center gap-2 text-base font-semibold',
+        variant === 'dark' ? 'text-white' : 'text-cee-red',
         className,
       )}
       role="timer"

@@ -87,7 +87,7 @@ export function EventSlider({ events, isLoading = false }: EventSliderProps) {
                   <Sparkles className="h-3.5 w-3.5" />
                   Evento institucional
                 </span>
-                <h3 className="max-w-2xl text-2xl font-semibold leading-tight text-white sm:text-4xl lg:text-5xl">
+                <h3 className="max-w-2xl text-xl font-bold leading-tight text-white sm:text-2xl">
                   {event.title}
                 </h3>
                 <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm sm:text-sm">

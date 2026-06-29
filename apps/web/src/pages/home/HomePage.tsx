@@ -12,6 +12,7 @@ import { EventSlider } from '@/components/home/EventSlider';
 import { HomeSideActions } from '@/components/home/HomeSideActions';
 import { SectionAnchors } from '@/components/home/SectionAnchors';
 import { NextStartBadge } from '@/components/shared/NextStartBadge';
+import { WhyChooseUsSection } from '@/components/home/WhyChooseUsSection';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
 import { useCourses } from '@/hooks/useCourses';
@@ -131,10 +132,10 @@ export default function HomePage() {
               <span className="h-px w-6 bg-white/50" aria-hidden="true" />
               CEE-FIIS · Desde 1999
             </p>
-            <h1 className="mt-2 text-3xl leading-tight sm:text-4xl">
+            <h1 className="mt-2 text-4xl leading-tight sm:text-4xl font-bold">
               Especialízate con el Centro de Especialización Ejecutiva
             </h1>
-            <p className="mt-3 text-base text-white/85 sm:text-lg">
+            <p className="mt-3 text-base text-white/85">
               Programas ejecutivos de la FIIS-UNI diseñados para impulsar tu carrera profesional.
             </p>
 
@@ -226,7 +227,7 @@ export default function HomePage() {
           <p className="text-xs font-medium uppercase tracking-widest text-cee-red">
             Agenda CEE
           </p>
-          <h2 className="text-2xl sm:text-3xl">Próximos eventos</h2>
+          <h2 className="text-2xl font-bold">Nuestros Programas</h2>
         </div>
         <EventSlider events={events} isLoading={eventsLoading} />
       </section>
@@ -239,7 +240,7 @@ export default function HomePage() {
           ref={programasHeaderRef}
           className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <h2 className="text-2xl">Programas destacados</h2>
+          <h2 className="text-2xl font-bold">Programas destacados</h2>
           <CourseFilter value={category} onChange={setCategory} />
         </div>
 
@@ -274,6 +275,10 @@ export default function HomePage() {
         className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8"
       >
         <AboutSection />
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+        <WhyChooseUsSection />
       </section>
 
       <section

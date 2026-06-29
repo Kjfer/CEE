@@ -2,7 +2,9 @@ import { Award, Users, Lightbulb, Target } from 'lucide-react';
 import { ValueCard } from '@/components/about/ValueCard';
 import { StatsCounter } from '@/components/shared/StatsCounter';
 import { InstitutionalLogos } from '@/components/shared/InstitutionalLogos';
+import { StrategicAlliances } from '@/components/shared/StrategicAlliances';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { WhyChooseUsSection } from '@/components/home/WhyChooseUsSection';
 import { ROUTES } from '@/constants/routes';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
@@ -113,7 +115,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 pb-24 text-center sm:px-6 sm:pb-24 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <WhyChooseUsSection />
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
         <h2 className="text-3xl">Respaldo institucional</h2>
         <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
           El CEE opera con el respaldo de la Universidad Nacional de Ingeniería y sus instancias
@@ -122,6 +128,10 @@ export default function AboutPage() {
         <div className="mt-10 flex justify-center">
           <InstitutionalLogos />
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-16 pb-24 sm:px-6 sm:pb-24 lg:px-8">
+        <StrategicAlliances />
       </section>
     </>
   );

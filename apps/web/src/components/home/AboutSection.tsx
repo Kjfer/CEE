@@ -7,8 +7,8 @@ export function AboutSection() {
     <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8">
       <div>
         <p className="text-xs font-medium uppercase tracking-widest text-cee-red">Nosotros</p>
-        <h2 className="mt-1 text-2xl sm:text-3xl">Impulsa tu carrera, lidera tu futuro</h2>
-        <p className="mt-4 text-lg text-muted-foreground">
+        <h2 className="mt-1 text-2xl font-bold">Impulsa tu carrera, lidera tu futuro</h2>
+        <p className="mt-4 text-base text-muted-foreground">
           El Centro de Especialización Ejecutiva nace de la Facultad de Ingeniería Industrial y de
           Sistemas de la Universidad Nacional de Ingeniería para formar profesionales capaces de
           liderar la transformación de sus organizaciones, integrando teoría y práctica en cada
