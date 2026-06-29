@@ -36,6 +36,7 @@ export interface LandingLeadInput {
   source?: string; // p. ej. 'sidebar' | 'modal' | 'cta'
   courseId?: string | null;
   courseTitle?: string | null;
+  marketingConsent?: boolean;
 }
 
 export const contactService = {
@@ -53,6 +54,8 @@ export const contactService = {
 
     // Sin .select(): la policy de contact_leads solo permite SELECT a admins,
     // así que no se puede leer de vuelta la fila recién insertada como anónimo.
+    const consentDate = data.marketingConsent ? new Date().toISOString() : null;
+
     const { error } = await supabase.from('contact_leads').insert({
       name: data.name,
       email: data.email,
@@ -63,18 +66,20 @@ export const contactService = {
       company: data.company ?? null,
       position: data.position ?? null,
       source: data.source ?? null,
+      marketing_consent: data.marketingConsent ?? false,
+      consent_date: consentDate,
     });
 
     if (error) {
       throw new Error('No se pudo enviar el mensaje. Intenta nuevamente.');
     }
-    return { data: { ...data, id: '', createdAt: new Date().toISOString() } };
+    return { data: { ...data, id: '', createdAt: new Date().toISOString(), consentDate } };
   },
 
   /**
    * Captura un lead desde la landing del programa. Autogenera `subject` y `message`
    * (columnas NOT NULL en contact_leads) a partir del curso, y persiste los campos
-   * extra (empresa, cargo, source) de forma aditiva.
+   * extra (empresa, cargo, source, marketingConsent) de forma aditiva.
    */
   async sendLandingLead(input: LandingLeadInput): Promise<ApiResponse<ContactLead>> {
     const subject = input.courseTitle
@@ -99,6 +104,7 @@ export const contactService = {
       company: input.company ?? null,
       position: input.position ?? null,
       source: input.source ?? null,
+      marketingConsent: input.marketingConsent ?? false,
     });
   },
 };

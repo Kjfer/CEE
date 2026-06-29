@@ -155,6 +155,8 @@ export interface ContactLead {
   company?: string | null;
   position?: string | null;
   source?: string | null;
+  marketingConsent?: boolean;
+  consentDate?: string | null;
   createdAt: string;
 }
 

@@ -22,6 +22,7 @@ interface FormValues {
   email: string;
   phone: string;
   website: string; // honeypot
+  marketingConsent: boolean;
 }
 
 const INITIAL_VALUES: FormValues = {
@@ -29,6 +30,7 @@ const INITIAL_VALUES: FormValues = {
   email: '',
   phone: '',
   website: '',
+  marketingConsent: false,
 };
 
 type FormErrors = Partial<Record<'name' | 'email', string>>;
@@ -63,7 +65,11 @@ export function InscriptionForm({ course, source = 'landing' }: InscriptionFormP
 
   const handleChange =
     (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setValues((prev) => ({ ...prev, [field]: e.target.value }));
+      if (field === 'marketingConsent') {
+        setValues((prev) => ({ ...prev, [field]: e.target.checked }));
+      } else {
+        setValues((prev) => ({ ...prev, [field]: e.target.value }));
+      }
     };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -91,6 +97,7 @@ export function InscriptionForm({ course, source = 'landing' }: InscriptionFormP
         source,
         courseId: course.id,
         courseTitle: course.title,
+        marketingConsent: values.marketingConsent,
       });
 
       success(
@@ -211,7 +218,20 @@ export function InscriptionForm({ course, source = 'landing' }: InscriptionFormP
               />
             </div>
 
-            <Button type="submit" size="lg" disabled={isSubmitting} className="mt-1 w-full">
+            <div className="flex items-start gap-2 pt-1">
+              <input
+                id="marketing-consent"
+                type="checkbox"
+                checked={values.marketingConsent}
+                onChange={handleChange('marketingConsent')}
+                className="mt-1 h-4 w-4 rounded border-border accent-cee-red"
+              />
+              <label htmlFor="marketing-consent" className="text-xs leading-snug text-muted-foreground cursor-pointer">
+                Deseo recibir información sobre programas, ofertas y novedades del CEE en mi correo.
+              </label>
+            </div>
+
+            <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 w-full">
               {isSubmitting ? 'Enviando...' : 'Quiero inscribirme'}
             </Button>
 
