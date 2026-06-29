@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { CourseCategory } from '@cee/types';
 import { CourseCard } from '@/components/shared/CourseCard';
 import { CourseCardSkeleton } from '@/components/shared/CourseCardSkeleton';
@@ -35,8 +36,15 @@ const SECTION_ANCHORS = [
   { id: 'blog', label: 'Blog' },
 ];
 
+const HERO_IMAGES = [
+  'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=75',
+  'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1600&q=75',
+  'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1600&q=75',
+];
+
 export default function HomePage() {
   const [category, setCategory] = useState<CourseCategory | 'Todas'>('Todas');
+  const [heroImageIndex, setHeroImageIndex] = useState(0);
   const { courses, isLoading } = useCourses({ category });
   const { events, isLoading: eventsLoading } = useEvents();
   const featuredCourse = getFeaturedCourse(courses);
@@ -47,6 +55,25 @@ export default function HomePage() {
   const nosotrosSectionRef = useScrollReveal<HTMLDivElement>();
   const blogSectionRef = useScrollReveal<HTMLDivElement>({ selector: ':scope > *' });
 
+  // Carrusel de imágenes hero
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeroImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Funciones de navegación del carrusel
+  const handlePrevImage = () => {
+    setHeroImageIndex((prev) => (prev - 1 + HERO_IMAGES.length) % HERO_IMAGES.length);
+  };
+
+  const handleNextImage = () => {
+    setHeroImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+  };
+
+  // Animación de entrada del hero
   useEffect(() => {
     if (!heroRef.current) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -71,21 +98,34 @@ export default function HomePage() {
         id="hero"
         className="relative isolate flex flex-col overflow-hidden bg-cee-ink text-white sm:min-h-screen sm:flex-row"
       >
-        {/* Imagen de fondo (desktop): de pared a pared, detrás del bloque de texto.
-            El recorte diagonal vive en el bloque guinda (CSS), no en la imagen. */}
-        <div className="absolute inset-0 hidden sm:block">
-          <img
-            src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=75"
-            alt=""
-            className="h-full w-full scale-105 object-cover blur-[1px]"
-            loading="eager"
-            fetchPriority="high"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-cee-ink/20 via-transparent to-transparent" />
+        {/* Imagen de fondo (desktop): carrusel que cambia cada 5 segundos */}
+        <div className="absolute inset-0 hidden sm:block overflow-hidden">
+          <div className="relative h-full w-full">
+            {/* Contenedor de imágenes con animación de deslizamiento */}
+            <div
+              className="absolute h-full w-full transition-transform duration-700"
+              style={{
+                transform: `translateX(-${heroImageIndex * 100}%)`,
+              }}
+            >
+              {HERO_IMAGES.map((image, idx) => (
+                <img
+                  key={idx}
+                  src={image}
+                  alt=""
+                  className="absolute h-full w-full object-cover blur-[1px] scale-105"
+                  style={{ left: `${idx * 100}%` }}
+                  loading={idx === heroImageIndex ? 'eager' : 'lazy'}
+                  fetchPriority={idx === heroImageIndex ? 'high' : 'low'}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-cee-ink/30 via-cee-ink/10 to-transparent" />
         </div>
 
-        {/* Bloque diagonal guinda: contiene TODO el texto, alineado a la izquierda, sin padding muerto */}
-        <div className="relative z-10 flex w-full flex-col justify-center bg-gradient-to-br from-cee-red-800 via-cee-red-700 to-cee-red-900 px-6 py-14 sm:w-[58%] sm:py-0 sm:pl-10 sm:pr-14 sm:[clip-path:polygon(0_0,100%_0,80%_100%,0_100%)] lg:pl-16 lg:pr-20">
+        {/* Bloque guinda con degradé: contiene TODO el texto, alineado a la izquierda */}
+        <div className="relative z-10 flex w-full flex-col justify-center bg-gradient-to-r from-cee-red-800 via-cee-red-700 via-20% to-transparent px-6 py-14 sm:w-2/5 sm:py-0 sm:pl-10 sm:pr-20 lg:pl-16 lg:pr-32">
           <div ref={heroRef} className="max-w-xl">
             <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
               <span className="h-px w-6 bg-white/50" aria-hidden="true" />
@@ -117,14 +157,63 @@ export default function HomePage() {
         </div>
 
         {/* Imagen (mobile): debajo del texto, a ancho completo */}
-        <div className="relative h-48 w-full sm:hidden">
-          <img
-            src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=900&q=70"
-            alt=""
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-cee-ink/20" />
+        <div className="relative h-48 w-full sm:hidden overflow-hidden">
+          <div className="relative h-full w-full">
+            {/* Contenedor de imágenes con animación de deslizamiento */}
+            <div
+              className="absolute h-full w-full transition-transform duration-700"
+              style={{
+                transform: `translateX(-${heroImageIndex * 100}%)`,
+              }}
+            >
+              {HERO_IMAGES.map((image, idx) => (
+                <img
+                  key={idx}
+                  src={image.replace('w=1600', 'w=900')}
+                  alt=""
+                  className="absolute h-full w-full object-cover"
+                  style={{ left: `${idx * 100}%` }}
+                  loading={idx === heroImageIndex ? 'eager' : 'lazy'}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="absolute inset-0 bg-cee-ink/30" />
+        </div>
+
+        {/* Controles del carrusel: botones de navegación y indicadores */}
+        <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-8 sm:bottom-8">
+          {/* Botón anterior */}
+          <button
+            onClick={handlePrevImage}
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-cee-red text-white transition hover:bg-cee-red-dark backdrop-blur-sm shadow-lg flex-shrink-0"
+            aria-label="Imagen anterior"
+          >
+            <ChevronLeft className="h-7 w-7" />
+          </button>
+
+          {/* Indicadores de página */}
+          <div className="flex gap-3">
+            {HERO_IMAGES.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setHeroImageIndex(idx)}
+                className={`rounded-full transition-all ${
+                  idx === heroImageIndex ? 'bg-cee-red w-8 h-4' : 'bg-cee-red/60 w-4 h-4 hover:bg-cee-red'
+                }`}
+                aria-label={`Ir a imagen ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Botón siguiente */}
+          <button
+            onClick={handleNextImage}
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-cee-red text-white transition hover:bg-cee-red-dark backdrop-blur-sm shadow-lg flex-shrink-0"
+            aria-label="Siguiente imagen"
+          >
+            <ChevronRight className="h-7 w-7" />
+          </button>
         </div>
       </section>
 
