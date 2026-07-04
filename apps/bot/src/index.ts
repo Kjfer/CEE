@@ -2,6 +2,11 @@ import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import { handleQuestion, handleQuestionStream, Message } from './handlers/message';
 import { chatRateLimiter } from './middleware/rateLimiter';
+import {
+  getDashboardSummary,
+  DashboardSummaryKpis,
+  DashboardSummaryCategoryPoint,
+} from './services/dashboardSummaryService';
 
 const app = express();
 app.use(express.json());
@@ -60,6 +65,29 @@ app.post('/api/chat', chatRateLimiter, (req: Request, res: Response) => {
     .catch((err: Error) => {
       console.error('[api/chat] Error al procesar consulta:', err);
       res.status(500).json({ error: 'Error al procesar la consulta.' });
+    });
+});
+
+app.post('/api/dashboard-summary', (req: Request, res: Response) => {
+  const { from, to, kpis, coursesByCategory } = req.body as {
+    from?: string;
+    to?: string;
+    kpis?: DashboardSummaryKpis;
+    coursesByCategory?: DashboardSummaryCategoryPoint[];
+  };
+
+  if (!from || !to || !kpis) {
+    res.status(400).json({ error: 'Los campos "from", "to" y "kpis" son requeridos.' });
+    return;
+  }
+
+  getDashboardSummary({ from, to, kpis, coursesByCategory: coursesByCategory ?? [] })
+    .then((summary) => {
+      res.json({ summary });
+    })
+    .catch((err: Error) => {
+      console.error('[api/dashboard-summary] Error al generar el resumen:', err);
+      res.status(500).json({ error: 'No se pudo generar el resumen.' });
     });
 });
 

@@ -16,6 +16,8 @@ import {
 import { BookOpen, CheckCircle, DollarSign, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import type { DashboardMetrics } from '@cee/types';
 import { dashboardService } from '@/services/dashboardService';
+import { dashboardSummaryService } from '@/services/dashboardSummaryService';
+import { ExecutiveSummaryCard } from '@/components/dashboard/ExecutiveSummaryCard';
 import { cn, formatPrice } from '@/lib/utils';
 
 // ─── constants ───────────────────────────────────────────────────────────────
@@ -100,6 +102,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(false);
 
+  const [summary, setSummary]               = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryFailed, setSummaryFailed]   = useState(false);
+
   const load = useCallback(async (f: string, t: string) => {
     setLoading(true);
     setError(false);
@@ -114,6 +120,36 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => { void load(applied.from, applied.to); }, [applied, load]);
+
+  // Resumen ejecutivo por IA: se pide una vez que las métricas reales ya
+  // cargaron, y nunca bloquea ni afecta el render de los KPIs/gráficos.
+  useEffect(() => {
+    if (!metrics) return;
+    let cancelled = false;
+
+    setSummary(null);
+    setSummaryFailed(false);
+    setSummaryLoading(true);
+
+    dashboardSummaryService
+      .getSummary({
+        from: applied.from,
+        to: applied.to,
+        kpis: metrics.kpis,
+        coursesByCategory: metrics.coursesByCategory,
+      })
+      .then((text) => {
+        if (!cancelled) setSummary(text);
+      })
+      .catch(() => {
+        if (!cancelled) setSummaryFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setSummaryLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [metrics, applied]);
 
   const totalCourses = metrics?.coursesByCategory.reduce((s, c) => s + c.count, 0) ?? 0;
 
@@ -176,6 +212,9 @@ export default function DashboardPage() {
 
       {!loading && !error && metrics && (
         <>
+          {/* ── Resumen ejecutivo (IA, vía apps/bot) ── */}
+          <ExecutiveSummaryCard summary={summary} loading={summaryLoading} failed={summaryFailed} />
+
           {/* ── KPI cards — íconos con colores distintos ── */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard
