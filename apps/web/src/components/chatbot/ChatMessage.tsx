@@ -67,7 +67,7 @@ function parseContent(text: string): ReactNode {
           <button
             key={key++}
             onClick={() => chatbotService.sendMessage(query)}
-            className="inline-block mt-2 border-[1.5px] border-[#C9972C] text-[#C9972C] bg-white rounded-2xl px-3 py-1.5 text-xs font-semibold hover:bg-[#C9972C] hover:text-white transition-colors cursor-pointer"
+            className="inline-block mt-2 border-[1.5px] border-[#0369a1] text-[#0369a1] bg-white rounded-2xl px-3 py-1.5 text-xs font-semibold hover:bg-[#0369a1] hover:text-white hover:shadow-[0_0_12px_rgba(56,189,248,0.45)] transition-all cursor-pointer"
           >
             {chipText}
           </button>,
@@ -109,20 +109,15 @@ function parseContent(text: string): ReactNode {
 
 /** Tarjetas de cursos en carrusel horizontal — sin imágenes, con acento de color */
 function CourseCardCarousel({ courses }: { courses: CardCourse[] }) {
-  const colors = ['#7B1E2E', '#C9972C', '#1a5276', '#1e8449', '#6c3483'];
-
   return (
     <div className="flex gap-2 overflow-x-auto mt-2.5 -mx-1 px-1 pb-1.5 scroll-snap-x scrollbar-none">
       {courses.map((c, i) => (
         <div
           key={c.id || i}
-          className="flex-shrink-0 w-[150px] snap-start bg-white border-[1.5px] border-[#e8d5d8] rounded-[14px] flex flex-col overflow-hidden"
+          className="flex-shrink-0 w-[150px] snap-start bg-white border border-[#d9e6f2] rounded-[14px] flex flex-col overflow-hidden hover:border-[rgba(56,189,248,0.55)] hover:shadow-[0_4px_16px_rgba(13,127,216,0.16)] transition-shadow"
         >
-          {/* Barra de color superior */}
-          <div
-            className="h-1.5 w-full flex-shrink-0"
-            style={{ backgroundColor: colors[i % colors.length] }}
-          />
+          {/* Barra superior holográfica guinda→cian */}
+          <div className="h-[3px] w-full flex-shrink-0 bg-gradient-to-r from-[#7B1E2E] to-[#38BDF8]" />
           <div className="p-2.5 flex flex-col gap-1.5 flex-1">
             <span className="text-[12.5px] font-bold text-[#7B1E2E] leading-snug line-clamp-2">
               {c.name}
@@ -135,14 +130,14 @@ function CourseCardCarousel({ courses }: { courses: CardCourse[] }) {
             {c.slug ? (
               <Link
                 to={`/programas/${c.slug}`}
-                className="mt-auto text-center text-[11.5px] font-semibold bg-[#7B1E2E] text-white py-1.5 rounded-[10px] hover:bg-[#9b2437] transition-colors"
+                className="mt-auto text-center text-[11.5px] font-semibold bg-[#7B1E2E] text-white py-1.5 rounded-[10px] hover:bg-[#9b2437] hover:shadow-[0_0_10px_rgba(56,189,248,0.4)] transition-all"
               >
                 Ver más
               </Link>
             ) : (
               <button
                 onClick={() => chatbotService.sendMessage(`¿Qué cursos tienen de ${c.name}?`)}
-                className="mt-auto text-center text-[11.5px] font-semibold bg-[#7B1E2E] text-white py-1.5 rounded-[10px] hover:bg-[#9b2437] transition-colors"
+                className="mt-auto text-center text-[11.5px] font-semibold bg-[#7B1E2E] text-white py-1.5 rounded-[10px] hover:bg-[#9b2437] hover:shadow-[0_0_10px_rgba(56,189,248,0.4)] transition-all"
               >
                 Ver cursos
               </button>
@@ -183,8 +178,8 @@ export function ChatMessageBubble({ message }: Props) {
       <div
         className={`max-w-[85%] px-3.5 py-2.5 text-[13.5px] leading-relaxed break-words ${
           isBot
-            ? 'bg-white text-[#2d1a1e] rounded-[18px_18px_18px_4px] border-[1.5px] border-[#e8d5d8] shadow-clay-bubble'
-            : 'bg-[#7B1E2E] text-white rounded-[18px_18px_4px_18px] shadow-[0_3px_0_#5a1520,0_4px_12px_rgba(123,30,46,0.2)]'
+            ? 'bg-white text-[#16222e] rounded-[16px_16px_16px_4px] border border-[#d9e6f2] shadow-holo-bubble'
+            : 'bg-gradient-to-br from-[#93253a] to-[#5a1520] text-white rounded-[16px_16px_4px_16px] shadow-[0_4px_14px_rgba(123,30,46,0.32)]'
         }`}
       >
         <div className="chat-message-content">
