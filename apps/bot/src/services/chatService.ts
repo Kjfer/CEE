@@ -51,6 +51,44 @@ function extractSQL(text: string): string | null {
   return null;
 }
 
+// ── Validación del SQL generado (whitelist) ───────────────────────────────────
+// El SQL lo genera un LLM y se ejecuta vía RPC (execute_query), así que se
+// valida antes de correrlo: solo SELECT, solo tablas conocidas del schema
+// declarado en SQL_SYSTEM_PROMPT, y una sola sentencia (sin ";" que permita
+// statement stacking).
+
+const ALLOWED_TABLES = ['courses', 'sales', 'contact_leads', 'instructors'];
+const FORBIDDEN_SQL_KEYWORDS =
+  /\b(insert|update|delete|drop|alter|truncate|create|grant|revoke|exec|execute|merge|call|copy|vacuum)\b/i;
+
+function validateSql(sql: string): { valid: true } | { valid: false; reason: string } {
+  const trimmed = sql.trim();
+
+  if (!/^SELECT\b/i.test(trimmed)) {
+    return { valid: false, reason: 'no es una consulta SELECT' };
+  }
+
+  // Un único ";" final es tolerable (ya se recorta en extractSQL); cualquier
+  // ";" que no sea el último carácter implica una segunda sentencia.
+  const withoutTrailingSemicolon = trimmed.replace(/;\s*$/, '');
+  if (withoutTrailingSemicolon.includes(';')) {
+    return { valid: false, reason: 'contiene múltiples sentencias separadas por ";"' };
+  }
+
+  if (FORBIDDEN_SQL_KEYWORDS.test(withoutTrailingSemicolon)) {
+    return { valid: false, reason: 'contiene una palabra clave no permitida' };
+  }
+
+  const referencedTables = [...withoutTrailingSemicolon.matchAll(/\b(?:from|join)\s+(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)/gi)]
+    .map((m) => m[1].toLowerCase());
+  const disallowedTables = referencedTables.filter((t) => !ALLOWED_TABLES.includes(t));
+  if (disallowedTables.length > 0) {
+    return { valid: false, reason: `referencia tabla(s) no permitida(s): ${disallowedTables.join(', ')}` };
+  }
+
+  return { valid: true };
+}
+
 // ── Caché de consultas SQL frecuentes ─────────────────────────────────────────
 // Solo se cachea el resultado del paso 1 (SQL generado + datos obtenidos), no
 // la respuesta final en lenguaje natural: así se evita repetir la llamada a
@@ -113,18 +151,25 @@ async function resolveDataContext(question: string, historyMessages: HistoryMess
 
   let dataContext: string;
 
-  if (sql && /^SELECT\b/i.test(sql)) {
-    const { data, error } = await supabase.rpc('execute_query', { query_text: sql });
-
-    if (error) {
-      console.error('[chatService] execute_query error:', error.message, '| SQL:', sql);
-      dataContext = `Error al ejecutar la consulta: ${error.message}`;
-    } else {
-      dataContext = `Resultados de la consulta:\n${JSON.stringify(data, null, 2)}`;
-    }
-  } else {
+  if (!sql) {
     console.warn('[chatService] No se extrajo SQL válido del response:', rawSQL);
     dataContext = '';
+  } else {
+    const validation = validateSql(sql);
+    if (!validation.valid) {
+      // No se ejecuta la query; no se expone el SQL ni el motivo técnico al usuario.
+      console.warn('[chatService] SQL rechazado por validación:', validation.reason, '| SQL:', sql);
+      dataContext = '';
+    } else {
+      const { data, error } = await supabase.rpc('execute_query', { query_text: sql });
+
+      if (error) {
+        console.error('[chatService] execute_query error:', error.message, '| SQL:', sql);
+        dataContext = `Error al ejecutar la consulta: ${error.message}`;
+      } else {
+        dataContext = `Resultados de la consulta:\n${JSON.stringify(data, null, 2)}`;
+      }
+    }
   }
 
   setCachedDataContext(question, dataContext);
