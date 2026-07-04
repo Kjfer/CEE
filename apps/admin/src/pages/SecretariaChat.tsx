@@ -1,5 +1,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Bot, Send, Trash2, User, Zap } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import type { CourseCategory, CourseModality, StudentSource } from '@cee/types';
 import {
   AlertDialog,
@@ -310,6 +312,25 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
   }
 }
 
+// ─── Markdown styling (solo mensajes del asistente) ──────────────────────────
+
+const markdownComponents: Components = {
+  p:          ({ children }) => <p className="whitespace-pre-wrap [&:not(:first-child)]:mt-2">{children}</p>,
+  strong:     ({ children }) => <strong className="font-semibold">{children}</strong>,
+  em:         ({ children }) => <em className="italic">{children}</em>,
+  ul:         ({ children }) => <ul className="mt-1 list-disc space-y-0.5 pl-5">{children}</ul>,
+  ol:         ({ children }) => <ol className="mt-1 list-decimal space-y-0.5 pl-5">{children}</ol>,
+  li:         ({ children }) => <li>{children}</li>,
+  a:          ({ children, href }) => (
+    <a href={href} target="_blank" rel="noreferrer" className="text-[#682222] underline">
+      {children}
+    </a>
+  ),
+  code:       ({ children }) => (
+    <code className="rounded bg-black/5 px-1 py-0.5 font-mono text-[12px]">{children}</code>
+  ),
+};
+
 // ─── UI components ────────────────────────────────────────────────────────────
 
 function Bubble({ msg }: { msg: Message }) {
@@ -334,7 +355,11 @@ function Bubble({ msg }: { msg: Message }) {
             : 'rounded-bl-sm bg-gray-100 text-gray-900',
         )}
       >
-        <p className="whitespace-pre-wrap">{msg.content}</p>
+        {isUser ? (
+          <p className="whitespace-pre-wrap">{msg.content}</p>
+        ) : (
+          <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+        )}
         <p className={cn('mt-1 text-[10px]', isUser ? 'text-right text-white/60' : 'text-gray-400')}>
           {timeFmt.format(msg.ts)}
         </p>
