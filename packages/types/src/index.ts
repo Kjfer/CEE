@@ -105,6 +105,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: unknown;
+  feedback?: 'positive' | 'negative' | null;
   createdAt: string;
 }
 

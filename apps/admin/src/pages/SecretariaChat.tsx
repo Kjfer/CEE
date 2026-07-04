@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
-import { Bot, Send, Trash2, User, Zap } from 'lucide-react';
+import { Bot, Send, ThumbsDown, ThumbsUp, Trash2, User, Zap } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import type { CourseCategory, CourseModality, StudentSource } from '@cee/types';
@@ -49,6 +49,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   ts: Date;
+  feedback?: 'positive' | 'negative' | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -333,8 +334,14 @@ const markdownComponents: Components = {
 
 // ─── UI components ────────────────────────────────────────────────────────────
 
-function Bubble({ msg }: { msg: Message }) {
+interface BubbleProps {
+  msg: Message;
+  onFeedback: (id: string, feedback: 'positive' | 'negative') => void;
+}
+
+function Bubble({ msg, onFeedback }: BubbleProps) {
   const isUser = msg.role === 'user';
+  const canRate = !isUser && msg.id !== 'welcome';
   return (
     <div className={cn('flex items-end gap-2.5', isUser ? 'flex-row-reverse' : 'flex-row')}>
       <span
@@ -363,6 +370,34 @@ function Bubble({ msg }: { msg: Message }) {
         <p className={cn('mt-1 text-[10px]', isUser ? 'text-right text-white/60' : 'text-gray-400')}>
           {timeFmt.format(msg.ts)}
         </p>
+        {canRate && (
+          <div className="mt-1.5 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onFeedback(msg.id, 'positive')}
+              aria-label="Respuesta útil"
+              title="Respuesta útil"
+              className={cn(
+                'rounded p-1 transition-colors',
+                msg.feedback === 'positive' ? 'text-[#682222]' : 'text-gray-300 hover:text-gray-500',
+              )}
+            >
+              <ThumbsUp className="h-3.5 w-3.5" fill={msg.feedback === 'positive' ? 'currentColor' : 'none'} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onFeedback(msg.id, 'negative')}
+              aria-label="Respuesta no útil"
+              title="Respuesta no útil"
+              className={cn(
+                'rounded p-1 transition-colors',
+                msg.feedback === 'negative' ? 'text-[#682222]' : 'text-gray-300 hover:text-gray-500',
+              )}
+            >
+              <ThumbsDown className="h-3.5 w-3.5" fill={msg.feedback === 'negative' ? 'currentColor' : 'none'} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -448,10 +483,11 @@ export default function SecretariaChat() {
           setMessages([WELCOME]);
         } else {
           const loaded: Message[] = history.map((h) => ({
-            id:      h.id,
-            role:    h.role,
-            content: h.content,
-            ts:      new Date(h.createdAt),
+            id:       h.id,
+            role:     h.role,
+            content:  h.content,
+            ts:       new Date(h.createdAt),
+            feedback: h.feedback ?? null,
           }));
           setMessages(loaded);
           // Rebuild Groq context so the model remembers the conversation
@@ -469,6 +505,12 @@ export default function SecretariaChat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, toolStatus]);
+
+  // ── Feedback (👍/👎) ─────────────────────────────────────────────────────────
+  const handleFeedback = useCallback((id: string, feedback: 'positive' | 'negative') => {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, feedback } : m)));
+    void chatHistoryService.setFeedback(id, feedback);
+  }, []);
 
   // ── Clear history ────────────────────────────────────────────────────────────
   const handleClearHistory = async () => {
@@ -526,12 +568,12 @@ export default function SecretariaChat() {
           continueLoop = false;
           const reply = assistantMsg.content ?? 'Acción completada.';
 
-          // Persist assistant reply
-          void chatHistoryService.saveMessage('assistant', reply);
+          // Persist assistant reply — se espera el id real para poder registrar feedback después
+          const savedId = await chatHistoryService.saveMessage('assistant', reply);
 
           setMessages((prev) => [
             ...prev,
-            { id: crypto.randomUUID(), role: 'assistant', content: reply, ts: new Date() },
+            { id: savedId ?? crypto.randomUUID(), role: 'assistant', content: reply, ts: new Date(), feedback: null },
           ]);
         }
       }
@@ -624,7 +666,7 @@ export default function SecretariaChat() {
                 {(idx === 0 || msg.ts.toDateString() !== messages[idx - 1].ts.toDateString()) && (
                   <DateSeparator date={msg.ts} />
                 )}
-                <Bubble msg={msg} />
+                <Bubble msg={msg} onFeedback={handleFeedback} />
               </Fragment>
             ))}
             {loading && (toolStatus ? <ToolRunning status={toolStatus} /> : <TypingDots />)}
