@@ -51,15 +51,90 @@ function extractSQL(text: string): string | null {
   return null;
 }
 
-// ── Main service ──────────────────────────────────────────────────────────────
+// ── Validación del SQL generado (whitelist) ───────────────────────────────────
+// El SQL lo genera un LLM y se ejecuta vía RPC (execute_query), así que se
+// valida antes de correrlo: solo SELECT, solo tablas conocidas del schema
+// declarado en SQL_SYSTEM_PROMPT, y una sola sentencia (sin ";" que permita
+// statement stacking).
 
-export async function chatWithData(question: string, history: Message[]): Promise<string> {
-  const historyMessages = history.map((m) => ({
-    role: m.role as 'user' | 'assistant',
-    content: m.content,
-  }));
+const ALLOWED_TABLES = ['courses', 'sales', 'contact_leads', 'instructors'];
+const FORBIDDEN_SQL_KEYWORDS =
+  /\b(insert|update|delete|drop|alter|truncate|create|grant|revoke|exec|execute|merge|call|copy|vacuum)\b/i;
 
-  // Step 1 — ask Groq to generate SQL
+function validateSql(sql: string): { valid: true } | { valid: false; reason: string } {
+  const trimmed = sql.trim();
+
+  if (!/^SELECT\b/i.test(trimmed)) {
+    return { valid: false, reason: 'no es una consulta SELECT' };
+  }
+
+  // Un único ";" final es tolerable (ya se recorta en extractSQL); cualquier
+  // ";" que no sea el último carácter implica una segunda sentencia.
+  const withoutTrailingSemicolon = trimmed.replace(/;\s*$/, '');
+  if (withoutTrailingSemicolon.includes(';')) {
+    return { valid: false, reason: 'contiene múltiples sentencias separadas por ";"' };
+  }
+
+  if (FORBIDDEN_SQL_KEYWORDS.test(withoutTrailingSemicolon)) {
+    return { valid: false, reason: 'contiene una palabra clave no permitida' };
+  }
+
+  const referencedTables = [...withoutTrailingSemicolon.matchAll(/\b(?:from|join)\s+(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)/gi)]
+    .map((m) => m[1].toLowerCase());
+  const disallowedTables = referencedTables.filter((t) => !ALLOWED_TABLES.includes(t));
+  if (disallowedTables.length > 0) {
+    return { valid: false, reason: `referencia tabla(s) no permitida(s): ${disallowedTables.join(', ')}` };
+  }
+
+  return { valid: true };
+}
+
+// ── Caché de consultas SQL frecuentes ─────────────────────────────────────────
+// Solo se cachea el resultado del paso 1 (SQL generado + datos obtenidos), no
+// la respuesta final en lenguaje natural: así se evita repetir la llamada a
+// Groq + el RPC a Supabase para preguntas iguales/similares recientes, pero el
+// paso 2 se sigue generando siempre para mantener variedad en las respuestas.
+const QUERY_CACHE_TTL_MS = 10 * 60_000;
+const QUERY_CACHE_MAX_ENTRIES = 50;
+
+const queryCache = new Map<string, { dataContext: string; ts: number }>();
+
+function normalizeQuestion(question: string): string {
+  return question.trim().toLowerCase();
+}
+
+function getCachedDataContext(question: string): string | undefined {
+  const key = normalizeQuestion(question);
+  const entry = queryCache.get(key);
+  if (!entry) return undefined;
+
+  if (Date.now() - entry.ts > QUERY_CACHE_TTL_MS) {
+    queryCache.delete(key);
+    return undefined;
+  }
+  return entry.dataContext;
+}
+
+function setCachedDataContext(question: string, dataContext: string): void {
+  const key = normalizeQuestion(question);
+  if (!queryCache.has(key) && queryCache.size >= QUERY_CACHE_MAX_ENTRIES) {
+    const oldestKey = queryCache.keys().next().value;
+    if (oldestKey !== undefined) queryCache.delete(oldestKey);
+  }
+  queryCache.set(key, { dataContext, ts: Date.now() });
+}
+
+// ── Step 1 (compartido) — genera SQL y ejecuta la consulta ───────────────────
+
+type HistoryMessage = { role: 'user' | 'assistant'; content: string };
+
+async function resolveDataContext(question: string, historyMessages: HistoryMessage[]): Promise<string> {
+  const cached = getCachedDataContext(question);
+  if (cached !== undefined) {
+    console.log('[chatService] Cache hit para pregunta:', normalizeQuestion(question));
+    return cached;
+  }
+
   const sqlResponse = await groq.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [
@@ -74,37 +149,60 @@ export async function chatWithData(question: string, history: Message[]): Promis
   const rawSQL = sqlResponse.choices[0]?.message?.content ?? '';
   const sql = extractSQL(rawSQL);
 
-  let dataContext = '';
+  let dataContext: string;
 
-  if (sql && /^SELECT\b/i.test(sql)) {
-    // Step 2 — execute SQL via Supabase RPC
-    const { data, error } = await supabase.rpc('execute_query', { query_text: sql });
-
-    if (error) {
-      console.error('[chatService] execute_query error:', error.message, '| SQL:', sql);
-      dataContext = `Error al ejecutar la consulta: ${error.message}`;
-    } else {
-      dataContext = `Resultados de la consulta:\n${JSON.stringify(data, null, 2)}`;
-    }
-  } else {
+  if (!sql) {
     console.warn('[chatService] No se extrajo SQL válido del response:', rawSQL);
     dataContext = '';
+  } else {
+    const validation = validateSql(sql);
+    if (!validation.valid) {
+      // No se ejecuta la query; no se expone el SQL ni el motivo técnico al usuario.
+      console.warn('[chatService] SQL rechazado por validación:', validation.reason, '| SQL:', sql);
+      dataContext = '';
+    } else {
+      const { data, error } = await supabase.rpc('execute_query', { query_text: sql });
+
+      if (error) {
+        console.error('[chatService] execute_query error:', error.message, '| SQL:', sql);
+        dataContext = `Error al ejecutar la consulta: ${error.message}`;
+      } else {
+        dataContext = `Resultados de la consulta:\n${JSON.stringify(data, null, 2)}`;
+      }
+    }
   }
 
-  // Step 3 — generate natural language response with the data
+  setCachedDataContext(question, dataContext);
+  return dataContext;
+}
+
+function buildFinalMessages(question: string, historyMessages: HistoryMessage[], dataContext: string) {
+  return [
+    { role: 'system' as const, content: RESPONSE_SYSTEM_PROMPT },
+    ...historyMessages,
+    { role: 'user' as const, content: question },
+    {
+      role: 'assistant' as const,
+      content: dataContext
+        ? `He consultado la base de datos. ${dataContext}\n\nBasándome en estos datos, respondo:`
+        : 'No pude obtener datos específicos.',
+    },
+  ];
+}
+
+// ── Main service (respuesta completa, sin streaming) ─────────────────────────
+
+export async function chatWithData(question: string, history: Message[]): Promise<string> {
+  const historyMessages = history.map((m) => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+  }));
+
+  const dataContext = await resolveDataContext(question, historyMessages);
+
   const finalResponse = await groq.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
-    messages: [
-      { role: 'system', content: RESPONSE_SYSTEM_PROMPT },
-      ...historyMessages,
-      { role: 'user', content: question },
-      {
-        role: 'assistant',
-        content: dataContext
-          ? `He consultado la base de datos. ${dataContext}\n\nBasándome en estos datos, respondo:`
-          : 'No pude obtener datos específicos.',
-      },
-    ],
+    messages: buildFinalMessages(question, historyMessages, dataContext),
     max_tokens: 512,
     temperature: 0.4,
   });
@@ -113,4 +211,40 @@ export async function chatWithData(question: string, history: Message[]): Promis
     finalResponse.choices[0]?.message?.content ??
     'Lo siento, no pude generar una respuesta en este momento.'
   );
+}
+
+// ── Variante streaming — solo el paso 2 (lenguaje natural) se streamea ───────
+// El paso 1 (generación de SQL) no es visible para el usuario, así que se
+// resuelve por completo antes de empezar a emitir tokens.
+
+export async function chatWithDataStream(
+  question: string,
+  history: Message[],
+  onToken: (token: string) => void,
+): Promise<string> {
+  const historyMessages = history.map((m) => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+  }));
+
+  const dataContext = await resolveDataContext(question, historyMessages);
+
+  const stream = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: buildFinalMessages(question, historyMessages, dataContext),
+    max_tokens: 512,
+    temperature: 0.4,
+    stream: true,
+  });
+
+  let full = '';
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content ?? '';
+    if (delta) {
+      full += delta;
+      onToken(delta);
+    }
+  }
+
+  return full || 'Lo siento, no pude generar una respuesta en este momento.';
 }

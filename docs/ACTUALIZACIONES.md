@@ -21,7 +21,7 @@
 - **RLS policies** revisadas y documentadas para las tablas: `notifications`, `students`, `certificates`, `events`, `event_registrations`, `settings`, `chat_history`.
 - **Edge Function `check-enrollment`:** campo `from:` corregido a `onboarding@resend.dev` (dominio verificado en Resend). Cron activo `0 13 * * *` (8 am hora Perú). Se agregó segundo chequeo `course_confirmed` para notificar cuando un curso alcanza su mínimo el día de inicio.
 - **Bucket `avatars`** en Supabase Storage con política de lectura pública para mostrar fotos en el sidebar sin autenticación adicional.
-- **Groq API key** configurada en `apps/admin/.env` (`VITE_GROQ_API_KEY`). Modelo: `llama-3.3-70b-versatile`.
+- **Groq API key** vive únicamente en `apps/bot/.env` (`GROQ_API_KEY`, sin prefijo `VITE_`). `VITE_GROQ_API_KEY` fue removida de `apps/admin` — el Asistente CEE llama a Groq vía `POST /api/chat-completions` (proxy en `apps/bot`), nunca directo desde el navegador. Ver sección "Asistente CEE" más abajo.
 - **Diagnóstico de notificaciones:** logs `console.info/error` en `notificationsService` para confirmar en DevTools si el servicio llama a Supabase real o al mock.
 
 ### Pendientes
@@ -198,7 +198,7 @@ CRUD completo de descuentos y beneficios que se muestran en el perfil del estudi
 **Ruta:** `/asistente`  
 **Página:** `SecretariaChat.tsx`
 
-Chatbot administrativo con **function calling via Groq API** (modelo `llama-3.3-70b-versatile`). La interfaz tiene ancho máximo 800px centrado. Un `useRef` mantiene el historial completo de la conversación (incluyendo tool calls) para preservar el contexto entre turnos.
+Chatbot administrativo con **function calling via Groq API** (modelo `llama-3.3-70b-versatile`), llamado a través de `POST /api/chat-completions` en `apps/bot` (proxy delgado — la key de Groq nunca llega al navegador; la ejecución de las tools sigue 100% en el cliente). El mismo endpoint aplica el rate limiter de 20 msg/min por usuario. La interfaz tiene ancho máximo 800px centrado. Un `useRef` mantiene el historial completo de la conversación (incluyendo tool calls) para preservar el contexto entre turnos. Historial persistente en `chat_history` (Supabase) con feedback 👍/👎, independiente de qué endpoint llama a Groq.
 
 **Herramientas disponibles (tools):**
 
@@ -211,7 +211,7 @@ Chatbot administrativo con **function calling via Groq API** (modelo `llama-3.3-
 | `query_courses` | Lista todos los cursos con estado, modalidad y precio |
 | `query_students` | Busca alumnos por nombre, DNI o fuente de captación |
 
-**Configuración requerida:** `VITE_GROQ_API_KEY` en `apps/admin/.env`. Obtener en [console.groq.com/keys](https://console.groq.com/keys).
+**Configuración requerida:** `GROQ_API_KEY` en `apps/bot/.env` (y/o secret de la Edge Function, según dónde corra el proxy en producción) — nunca `VITE_GROQ_API_KEY` en `apps/admin`. Obtener en [console.groq.com/keys](https://console.groq.com/keys).
 
 Mientras el modelo llama una herramienta, se muestra un indicador de "Ejecutando: [acción]..." con fondo ámbar y animación de ping.
 
@@ -352,8 +352,8 @@ El campo `moodle_user_id` está en el formulario de alumno pero en una sección 
 ### Número correlativo de certificados generado en el cliente
 El número `CEE-{año}-{####}` se genera consultando el máximo existente y sumando 1. En mock mode se usa el cache en memoria; en Supabase se consulta la tabla antes de insertar. No tiene protección contra race conditions simultáneas (aceptable dado el volumen bajo de emisión de certificados del CEE). Si en el futuro aumenta el volumen, se puede mover a un trigger de Supabase.
 
-### `VITE_GROQ_API_KEY` en el cliente
-La clave de Groq se expone en el cliente por diseño: el panel admin es una herramienta interna (solo accesible con login de admin), por lo que el riesgo de exposición es equivalente al de cualquier herramienta interna con credenciales de API. Si se necesita más seguridad en el futuro, la llamada a Groq puede moverse a una Edge Function de Supabase que actúe de proxy.
+### `VITE_GROQ_API_KEY` — decisión revertida
+Se decidió originalmente exponer la clave de Groq en el cliente (panel interno, solo admin). Esa decisión se revirtió: el Asistente CEE ahora llama a Groq vía `POST /api/chat-completions` en `apps/bot`, que reenvía la solicitud (mismo system prompt, mismos tools, mismo tool_choice) usando `GROQ_API_KEY` server-side. La ejecución de las tools (`create_course`, `register_sale`, `issue_certificate`, `query_*`) sigue sin cambios en el navegador — solo cambió quién llama a Groq. Motivo del cambio: eliminar la clave del bundle del cliente, visible en devtools/network. `BotPage.tsx` (el flujo de texto→SQL de solo lectura con streaming/caché/whitelist) no era un reemplazo viable porque no cubre ninguna de las acciones de escritura ni la consulta de alumnos — quedó como ruta de debug en `/debug/consulta-datos`, sin enlace en el Sidebar.
 
 ### Sidebar user-section como link a `/perfil`
 En vez de agregar "Perfil" como ítem del menú lateral (que ya está lleno), se aprovechó la sección de avatar/nombre/correo en la parte inferior del sidebar. Al hacer hover aparece un `ChevronRight` sutil. Esto sigue el patrón de apps como Linear, Notion y Vercel donde el perfil se accede desde el avatar del usuario, no desde el menú de navegación principal.

@@ -1,5 +1,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
-import { Bot, Send, Trash2, User, Zap } from 'lucide-react';
+import { Bot, Send, ThumbsDown, ThumbsUp, Trash2, User, Zap } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import type { CourseCategory, CourseModality, StudentSource } from '@cee/types';
 import {
   AlertDialog,
@@ -17,6 +19,8 @@ import { salesRecordsService } from '@/services/salesRecordsService';
 import { certificatesService } from '@/services/certificatesService';
 import { studentsService } from '@/services/studentsService';
 import { chatHistoryService } from '@/services/chatHistoryService';
+import { useAuthStore } from '@/store/authStore';
+import { useToast } from '@/hooks/useToast';
 
 // ─── Groq types ───────────────────────────────────────────────────────────────
 
@@ -47,11 +51,12 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   ts: Date;
+  feedback?: 'positive' | 'negative' | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string | undefined;
+const BOT_URL = (import.meta.env.VITE_BOT_URL as string | undefined) ?? 'http://localhost:3000';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 const timeFmt = new Intl.DateTimeFormat('es-PE', { hour: '2-digit', minute: '2-digit' });
@@ -181,25 +186,31 @@ const TOOLS = [
   },
 ];
 
-// ─── Groq API call ────────────────────────────────────────────────────────────
+// ─── Groq API call (vía proxy de apps/bot — la key nunca vive en el navegador) ─
 
-async function callGroq(messages: GroqMessage[]): Promise<GroqResponse> {
-  if (!GROQ_API_KEY) {
-    throw new Error(
-      'Clave de API no configurada. Agrega VITE_GROQ_API_KEY al archivo .env.local del panel admin.',
-    );
-  }
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+class RateLimitError extends Error {}
+
+async function callGroq(messages: GroqMessage[], userId?: string): Promise<GroqResponse> {
+  const res = await fetch(`${BOT_URL}/api/chat-completions`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({ model: GROQ_MODEL, messages, tools: TOOLS, tool_choice: 'auto', temperature: 0.3 }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages,
+      tools: TOOLS,
+      tool_choice: 'auto',
+      temperature: 0.3,
+      userId,
+    }),
   });
+
+  if (res.status === 429) {
+    const body = await res.json().catch(() => null);
+    throw new RateLimitError(body?.error ?? 'Estás enviando mensajes muy rápido, espera un momento.');
+  }
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`Error Groq API ${res.status}: ${txt.slice(0, 200)}`);
+    throw new Error(`Error del servidor (${res.status}): ${txt.slice(0, 200)}`);
   }
   return res.json() as Promise<GroqResponse>;
 }
@@ -310,10 +321,35 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
   }
 }
 
+// ─── Markdown styling (solo mensajes del asistente) ──────────────────────────
+
+const markdownComponents: Components = {
+  p:          ({ children }) => <p className="whitespace-pre-wrap [&:not(:first-child)]:mt-2">{children}</p>,
+  strong:     ({ children }) => <strong className="font-semibold">{children}</strong>,
+  em:         ({ children }) => <em className="italic">{children}</em>,
+  ul:         ({ children }) => <ul className="mt-1 list-disc space-y-0.5 pl-5">{children}</ul>,
+  ol:         ({ children }) => <ol className="mt-1 list-decimal space-y-0.5 pl-5">{children}</ol>,
+  li:         ({ children }) => <li>{children}</li>,
+  a:          ({ children, href }) => (
+    <a href={href} target="_blank" rel="noreferrer" className="text-[#682222] underline">
+      {children}
+    </a>
+  ),
+  code:       ({ children }) => (
+    <code className="rounded bg-black/5 px-1 py-0.5 font-mono text-[12px]">{children}</code>
+  ),
+};
+
 // ─── UI components ────────────────────────────────────────────────────────────
 
-function Bubble({ msg }: { msg: Message }) {
+interface BubbleProps {
+  msg: Message;
+  onFeedback: (id: string, feedback: 'positive' | 'negative') => void;
+}
+
+function Bubble({ msg, onFeedback }: BubbleProps) {
   const isUser = msg.role === 'user';
+  const canRate = !isUser && msg.id !== 'welcome';
   return (
     <div className={cn('flex items-end gap-2.5', isUser ? 'flex-row-reverse' : 'flex-row')}>
       <span
@@ -334,10 +370,42 @@ function Bubble({ msg }: { msg: Message }) {
             : 'rounded-bl-sm bg-gray-100 text-gray-900',
         )}
       >
-        <p className="whitespace-pre-wrap">{msg.content}</p>
+        {isUser ? (
+          <p className="whitespace-pre-wrap">{msg.content}</p>
+        ) : (
+          <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+        )}
         <p className={cn('mt-1 text-[10px]', isUser ? 'text-right text-white/60' : 'text-gray-400')}>
           {timeFmt.format(msg.ts)}
         </p>
+        {canRate && (
+          <div className="mt-1.5 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onFeedback(msg.id, 'positive')}
+              aria-label="Respuesta útil"
+              title="Respuesta útil"
+              className={cn(
+                'rounded p-1 transition-colors',
+                msg.feedback === 'positive' ? 'text-[#682222]' : 'text-gray-300 hover:text-gray-500',
+              )}
+            >
+              <ThumbsUp className="h-3.5 w-3.5" fill={msg.feedback === 'positive' ? 'currentColor' : 'none'} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onFeedback(msg.id, 'negative')}
+              aria-label="Respuesta no útil"
+              title="Respuesta no útil"
+              className={cn(
+                'rounded p-1 transition-colors',
+                msg.feedback === 'negative' ? 'text-[#682222]' : 'text-gray-300 hover:text-gray-500',
+              )}
+            >
+              <ThumbsDown className="h-3.5 w-3.5" fill={msg.feedback === 'negative' ? 'currentColor' : 'none'} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -409,6 +477,8 @@ export default function SecretariaChat() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [clearOpen,      setClearOpen]      = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuthStore();
+  const toast = useToast();
 
   // Persistent Groq conversation history (not display state — no re-render needed)
   const groqHistoryRef = useRef<GroqMessage[]>([
@@ -423,10 +493,11 @@ export default function SecretariaChat() {
           setMessages([WELCOME]);
         } else {
           const loaded: Message[] = history.map((h) => ({
-            id:      h.id,
-            role:    h.role,
-            content: h.content,
-            ts:      new Date(h.createdAt),
+            id:       h.id,
+            role:     h.role,
+            content:  h.content,
+            ts:       new Date(h.createdAt),
+            feedback: h.feedback ?? null,
           }));
           setMessages(loaded);
           // Rebuild Groq context so the model remembers the conversation
@@ -444,6 +515,12 @@ export default function SecretariaChat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, toolStatus]);
+
+  // ── Feedback (👍/👎) ─────────────────────────────────────────────────────────
+  const handleFeedback = useCallback((id: string, feedback: 'positive' | 'negative') => {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, feedback } : m)));
+    void chatHistoryService.setFeedback(id, feedback);
+  }, []);
 
   // ── Clear history ────────────────────────────────────────────────────────────
   const handleClearHistory = async () => {
@@ -474,7 +551,7 @@ export default function SecretariaChat() {
       let continueLoop = true;
 
       while (continueLoop) {
-        const response = await callGroq(history);
+        const response = await callGroq(history, user?.id);
         const choice = response.choices[0];
         if (!choice) throw new Error('Respuesta inesperada de la API.');
 
@@ -501,31 +578,37 @@ export default function SecretariaChat() {
           continueLoop = false;
           const reply = assistantMsg.content ?? 'Acción completada.';
 
-          // Persist assistant reply
-          void chatHistoryService.saveMessage('assistant', reply);
+          // Persist assistant reply — se espera el id real para poder registrar feedback después
+          const savedId = await chatHistoryService.saveMessage('assistant', reply);
 
           setMessages((prev) => [
             ...prev,
-            { id: crypto.randomUUID(), role: 'assistant', content: reply, ts: new Date() },
+            { id: savedId ?? crypto.randomUUID(), role: 'assistant', content: reply, ts: new Date(), feedback: null },
           ]);
         }
       }
     } catch (err) {
       history.pop();
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: `⚠️ ${err instanceof Error ? err.message : 'Error desconocido. Intenta de nuevo.'}`,
-          ts: new Date(),
-        },
-      ]);
+
+      if (err instanceof RateLimitError) {
+        toast.error('Estás enviando mensajes muy rápido', err.message);
+        setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `⚠️ ${err instanceof Error ? err.message : 'Error desconocido. Intenta de nuevo.'}`,
+            ts: new Date(),
+          },
+        ]);
+      }
     } finally {
       setLoading(false);
       setToolStatus(null);
     }
-  }, [input, loading]);
+  }, [input, loading, user, toast]);
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -599,7 +682,7 @@ export default function SecretariaChat() {
                 {(idx === 0 || msg.ts.toDateString() !== messages[idx - 1].ts.toDateString()) && (
                   <DateSeparator date={msg.ts} />
                 )}
-                <Bubble msg={msg} />
+                <Bubble msg={msg} onFeedback={handleFeedback} />
               </Fragment>
             ))}
             {loading && (toolStatus ? <ToolRunning status={toolStatus} /> : <TypingDots />)}
