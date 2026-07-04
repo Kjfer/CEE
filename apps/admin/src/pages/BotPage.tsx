@@ -150,8 +150,11 @@ export default function BotPage() {
           <MessageCircle className="h-5 w-5 text-white" />
         </span>
         <div>
-          <p className="text-sm font-semibold text-white">Bot WhatsApp — Consulta de datos</p>
-          <p className="text-[10px] text-white/60">Prueba el flujo de consulta en lenguaje natural (apps/bot)</p>
+          <p className="text-sm font-semibold text-white">🛠️ Debug interno — Consulta de datos (SQL)</p>
+          <p className="text-[10px] text-white/60">
+            Herramienta de desarrollo para probar el flujo de texto→SQL de apps/bot (chatService.ts).
+            No es el Asistente CEE — esta ruta no está enlazada en el menú y no debe usarse con secretarias.
+          </p>
         </div>
       </div>
 

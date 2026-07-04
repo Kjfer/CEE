@@ -23,6 +23,7 @@ const StudentDetailPage = lazy(() => import('@/pages/students/StudentDetailPage'
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const SecretariaChat = lazy(() => import('@/pages/SecretariaChat'));
+const BotPage = lazy(() => import('@/pages/BotPage'));
 const AccessDeniedPage = lazy(() => import('@/pages/AccessDeniedPage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 
@@ -62,6 +63,10 @@ export const router = createBrowserRouter([
           { path: '/notificaciones', element: withSuspense(<NotificationsPage />) },
           { path: '/perfil', element: withSuspense(<ProfilePage />) },
           { path: '/asistente', element: withSuspense(<SecretariaChat />) },
+          // Ruta de desarrollo/debug — sin entrada en el Sidebar a propósito.
+          // Prueba el flujo texto->SQL de apps/bot (chatService.ts); no es el
+          // Asistente CEE que usan las secretarias.
+          { path: '/debug/consulta-datos', element: withSuspense(<BotPage />) },
         ],
       },
     ],
