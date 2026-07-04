@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { Bot, MessageCircle, Send, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/authStore';
+import { useToast } from '@/hooks/useToast';
 
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 
@@ -48,6 +50,8 @@ export default function BotPage() {
   const [loading, setLoading] = useState(false);
   const [waitingFirstToken, setWaitingFirstToken] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuthStore();
+  const toast = useToast();
 
   // Historial en el formato que espera /api/chat (solo role + content)
   const historyRef = useRef<{ role: 'user' | 'assistant'; content: string }[]>([]);
@@ -69,12 +73,17 @@ export default function BotPage() {
       const res = await fetch(`${BOT_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, history: historyRef.current, stream: true }),
+        body: JSON.stringify({ question, history: historyRef.current, stream: true, userId: user?.id }),
       });
 
       if (res.status === 429) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? 'Estás enviando mensajes muy rápido, espera un momento.');
+        toast.error(
+          'Estás enviando mensajes muy rápido',
+          body?.error ?? 'Espera un momento antes de volver a intentarlo.',
+        );
+        setMessages((prev) => prev.filter((m) => m.id !== assistantId && m.id !== userMsg.id));
+        return;
       }
       if (!res.ok || !res.body) {
         throw new Error(`Error del servidor (${res.status}).`);

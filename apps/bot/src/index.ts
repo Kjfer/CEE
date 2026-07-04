@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import { handleQuestion, handleQuestionStream, Message } from './handlers/message';
+import { chatRateLimiter } from './middleware/rateLimiter';
 
 const app = express();
 app.use(express.json());
@@ -22,7 +23,7 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'CEE Bot' });
 });
 
-app.post('/api/chat', (req: Request, res: Response) => {
+app.post('/api/chat', chatRateLimiter, (req: Request, res: Response) => {
   console.log('Body recibido:', req.body);
   const { question, history, stream } = req.body as { question?: string; history?: Message[]; stream?: boolean };
 
