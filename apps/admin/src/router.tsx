@@ -8,6 +8,8 @@ const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const CoursesListPage = lazy(() => import('@/pages/CoursesListPage'));
 const CourseFormPage = lazy(() => import('@/pages/CourseFormPage'));
 const CourseDetailPage = lazy(() => import('@/pages/courses/CourseDetailPage'));
+const InstructorsListPage = lazy(() => import('@/pages/instructors/InstructorsListPage'));
+const InstructorFormPage = lazy(() => import('@/pages/instructors/InstructorFormPage'));
 const BenefitsListPage = lazy(() => import('@/pages/BenefitsListPage'));
 const BenefitFormPage = lazy(() => import('@/pages/BenefitFormPage'));
 const SalesPage = lazy(() => import('@/pages/SalesPage'));
@@ -44,6 +46,9 @@ export const router = createBrowserRouter([
           { path: '/cursos/nuevo', element: withSuspense(<CourseFormPage />) },
           { path: '/cursos/:id/editar', element: withSuspense(<CourseFormPage />) },
           { path: '/cursos/:id', element: withSuspense(<CourseDetailPage />) },
+          { path: '/profesores', element: withSuspense(<InstructorsListPage />) },
+          { path: '/profesores/nuevo', element: withSuspense(<InstructorFormPage />) },
+          { path: '/profesores/:id/editar', element: withSuspense(<InstructorFormPage />) },
           { path: '/eventos', element: withSuspense(<EventsPage />) },
           { path: '/eventos/nuevo', element: withSuspense(<EventFormPage />) },
           { path: '/eventos/:id/editar', element: withSuspense(<EventFormPage />) },

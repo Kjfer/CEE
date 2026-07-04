@@ -134,6 +134,7 @@ export default function CoursesListPage() {
     const rows = courses.map((c) => ({
       'Nombre':              c.title,
       'Categoría':           c.category,
+      'Profesor(es)':        c.instructors?.map(i => i.name).join(', ') || 'Sin profesor',
       'Modalidad':           c.modality,
       'Nivel':               c.level,
       'Precio':              c.price,
@@ -229,17 +230,18 @@ export default function CoursesListPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] table-fixed text-sm">
               <colgroup>
-                <col style={{ width: '30%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '11%' }} />
-                <col style={{ width: '10%' }} />
+                <col style={{ width: '25%' }} />
                 <col style={{ width: '12%' }} />
+                <col style={{ width: '15%' }} />
                 <col style={{ width: '10%' }} />
-                <col style={{ width: '13%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '8%' }} />
               </colgroup>
               <thead>
                 <tr className="bg-[#682222] text-left">
-                  {['Nombre', 'Categoría', 'Modalidad', 'Precio', 'Estado', 'Creado', 'Acciones'].map((h) => (
+                  {['Nombre', 'Categoría', 'Profesor', 'Modalidad', 'Precio', 'Estado', 'Creado', 'Acciones'].map((h) => (
                     <th
                       key={h}
                       className={cn(
@@ -272,6 +274,11 @@ export default function CoursesListPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <CategoryChip category={course.category} />
+                    </td>
+                    <td className="px-5 py-3.5 text-xs text-gray-600 truncate max-w-[150px]" title={course.instructors?.map(i => i.name).join(', ') || 'Sin profesor'}>
+                      {course.instructors && course.instructors.length > 0
+                        ? course.instructors.map(i => i.name).join(', ')
+                        : <span className="text-gray-400 italic">Sin profesor</span>}
                     </td>
                     <td className="px-5 py-3.5 text-gray-600">{course.modality}</td>
                     <td className="px-5 py-3.5 font-semibold text-[#682222]">

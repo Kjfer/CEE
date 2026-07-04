@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   LogOut,
   ShoppingBag,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authService } from '@/services/auth.service';
@@ -23,9 +24,10 @@ import { useAuthStore } from '@/store/authStore';
 // ─── Nav structure ────────────────────────────────────────────────────────────
 
 const TOP_ITEMS = [
-  { label: 'Dashboard', path: '/',        icon: LayoutDashboard },
-  { label: 'Cursos',    path: '/cursos',  icon: BookOpen },
-  { label: 'Eventos',   path: '/eventos', icon: CalendarDays },
+  { label: 'Dashboard',  path: '/',           icon: LayoutDashboard },
+  { label: 'Cursos',     path: '/cursos',     icon: BookOpen },
+  { label: 'Profesores', path: '/profesores', icon: Users },
+  { label: 'Eventos',    path: '/eventos',    icon: CalendarDays },
 ] as const;
 
 const VENTAS_CHILDREN = [

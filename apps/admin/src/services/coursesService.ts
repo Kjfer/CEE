@@ -42,6 +42,7 @@ export interface CourseFormInput {
   maxStudents: number | null;
   minStudents: number | null;
   alertDaysBefore: number | null;
+  instructorIds: string[];
 }
 
 function buildCourseFromInput(input: CourseFormInput, existing?: Course): Course {
@@ -77,7 +78,13 @@ function buildCourseFromInput(input: CourseFormInput, existing?: Course): Course
     status: input.status,
     graduateProfile: existing?.graduateProfile ?? [],
     syllabus: existing?.syllabus ?? [],
-    instructors: existing?.instructors ?? [],
+    instructors: input.instructorIds.map((id) => ({
+      id,
+      name: `Profesor ${id.split('-').pop()}`,
+      title: 'TBD',
+      bio: '',
+      photoUrl: '',
+    })),
     benefits: existing?.benefits ?? [],
     updatedAt: now,
     createdAt: existing?.createdAt ?? now,
@@ -256,6 +263,26 @@ export const coursesService = {
     if (error || !data) {
       throw new Error('No se pudo crear el curso.');
     }
+
+    if (input.instructorIds.length > 0) {
+      const courseInstructors = input.instructorIds.map((instId) => ({
+        course_id: data.id,
+        instructor_id: instId,
+      }));
+      await supabase.from('course_instructors').insert(courseInstructors);
+      
+      // Refetch to include the newly added instructors
+      const refetched = await supabase
+        .from('courses')
+        .select(COURSE_SELECT)
+        .eq('id', data.id)
+        .single();
+      
+      if (refetched.data) {
+        return { data: formatCourse(refetched.data as unknown as CourseRow) };
+      }
+    }
+
     return { data: formatCourse(data as unknown as CourseRow) };
   },
 
@@ -300,7 +327,29 @@ export const coursesService = {
     if (error || !data) {
       throw new Error(`Curso no encontrado: ${id}`);
     }
-    return { data: formatCourse(data as unknown as CourseRow) };
+
+    // Update instructors
+    await supabase.from('course_instructors').delete().eq('course_id', id);
+    if (input.instructorIds.length > 0) {
+      const courseInstructors = input.instructorIds.map((instId) => ({
+        course_id: id,
+        instructor_id: instId,
+      }));
+      await supabase.from('course_instructors').insert(courseInstructors);
+    }
+
+    // Refetch to include updated instructors
+    const refetched = await supabase
+      .from('courses')
+      .select(COURSE_SELECT)
+      .eq('id', id)
+      .single();
+
+    if (refetched.error || !refetched.data) {
+      throw new Error(`Error recargando curso: ${id}`);
+    }
+
+    return { data: formatCourse(refetched.data as unknown as CourseRow) };
   },
 
   async updateCourseStatus(id: string, status: CourseStatus): Promise<ApiResponse<Course>> {

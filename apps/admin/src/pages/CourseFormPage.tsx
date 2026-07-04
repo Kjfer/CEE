@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { CourseCategory, CourseModality, CourseStatus } from '@cee/types';
-import { Paperclip, X } from 'lucide-react';
+import type { CourseCategory, CourseModality, CourseStatus, Instructor } from '@cee/types';
+import { Paperclip, UploadCloud, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { COURSE_STATUS_OPTIONS } from '@/constants/courseStatus';
 import { useToast } from '@/hooks/useToast';
 import { coursesService, type CourseFormInput } from '@/services/coursesService';
+import { instructorsService } from '@/services/instructorsService';
 
 const CATEGORY_OPTIONS: CourseCategory[] = [
   'Ingeniería',
@@ -36,6 +37,7 @@ interface FormValues {
   maxStudents: string;
   minStudents: string;
   alertDaysBefore: string;
+  instructorIds: string[];
 }
 
 const INITIAL_VALUES: FormValues = {
@@ -52,6 +54,7 @@ const INITIAL_VALUES: FormValues = {
   maxStudents: '',
   minStudents: '',
   alertDaysBefore: '',
+  instructorIds: [],
 };
 
 type FormErrors = Partial<Record<keyof FormValues, string>>;
@@ -98,13 +101,17 @@ export default function CourseFormPage() {
   const [isLoadingCourse, setIsLoadingCourse] = useState(isEditMode);
   const [loadError, setLoadError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [allInstructors, setAllInstructors] = useState<Instructor[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
+    instructorsService.getInstructors().then((res) => {
+      if (isMounted) setAllInstructors(res.data);
+    }).catch(() => {});
+
     if (!isEditMode || !id) {
       return;
     }
-
-    let isMounted = true;
     coursesService
       .getCourseById(id)
       .then((response) => {
@@ -124,6 +131,7 @@ export default function CourseFormPage() {
           maxStudents:     course.maxStudents     != null ? String(course.maxStudents)     : '',
           minStudents:     course.minStudents     != null ? String(course.minStudents)     : '',
           alertDaysBefore: course.alertDaysBefore != null ? String(course.alertDaysBefore) : '',
+          instructorIds: course.instructors.map((i) => i.id),
         });
         setSyllabusFileName(course.syllabusPdfUrl ? fileNameFromUrl(course.syllabusPdfUrl) : null);
       })
@@ -199,6 +207,7 @@ export default function CourseFormPage() {
         maxStudents:     values.maxStudents     ? Number(values.maxStudents)     : null,
         minStudents:     values.minStudents     ? Number(values.minStudents)     : null,
         alertDaysBefore: values.alertDaysBefore ? Number(values.alertDaysBefore) : null,
+        instructorIds: values.instructorIds,
       };
 
       if (isEditMode && id) {
@@ -360,7 +369,7 @@ export default function CourseFormPage() {
               id="category"
               value={values.category}
               onChange={handleChange('category')}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               aria-invalid={Boolean(errors.category)}
             >
               <option value="">Selecciona...</option>
@@ -379,7 +388,7 @@ export default function CourseFormPage() {
               id="modality"
               value={values.modality}
               onChange={handleChange('modality')}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {MODALITY_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -395,7 +404,7 @@ export default function CourseFormPage() {
               id="status"
               value={values.status}
               onChange={handleChange('status')}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {COURSE_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -407,24 +416,86 @@ export default function CourseFormPage() {
         </div>
 
         <div className="grid gap-1.5">
+          <Label>Profesores asignados</Label>
+          {allInstructors.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No hay profesores registrados.</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-2 border rounded-md p-4 bg-muted/10 max-h-48 overflow-y-auto">
+              {allInstructors.map((instructor) => {
+                const isSelected = values.instructorIds.includes(instructor.id);
+                return (
+                  <label
+                    key={instructor.id}
+                    className={`flex items-center gap-3 p-2 border rounded-md cursor-pointer transition-colors ${
+                      isSelected ? 'border-primary/50 bg-primary/5' : 'bg-background hover:bg-muted/50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setValues((prev) => ({ ...prev, instructorIds: [...prev.instructorIds, instructor.id] }));
+                        } else {
+                          setValues((prev) => ({ ...prev, instructorIds: prev.instructorIds.filter((instructorId) => instructorId !== instructor.id) }));
+                        }
+                      }}
+                    />
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <img src={instructor.photoUrl} alt={instructor.name} className="h-6 w-6 rounded-full object-cover shrink-0" />
+                      <span className="text-sm font-medium truncate">{instructor.name}</span>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-1.5">
           <Label htmlFor="syllabus">Sílabo (PDF)</Label>
-          <input
-            ref={fileInputRef}
-            id="syllabus"
-            type="file"
-            accept="application/pdf"
-            onChange={handleFileChange}
-            className="text-sm"
-          />
-          {syllabusFileName && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Paperclip className="h-4 w-4" />
-              <span>{syllabusFileName}</span>
+          {!syllabusFileName ? (
+            <div className="relative group cursor-pointer">
+              <input
+                ref={fileInputRef}
+                id="syllabus"
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                title="Seleccionar archivo PDF"
+              />
+              <div className="flex flex-col items-center justify-center gap-2 px-4 py-8 border-2 border-dashed rounded-lg bg-muted/20 border-muted-foreground/25 group-hover:bg-muted/50 group-hover:border-primary/50 transition-all duration-200">
+                <div className="p-3 bg-background rounded-full shadow-sm group-hover:scale-105 transition-transform duration-200">
+                  <UploadCloud className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">
+                    <span className="text-primary hover:underline">Haz clic para subir</span> o arrastra y suelta
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Solo archivos PDF (máx. {MAX_FILE_SIZE_MB}MB)
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="p-2 bg-background/80 rounded-md">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex flex-col truncate">
+                  <span className="text-sm font-medium truncate">{syllabusFileName}</span>
+                  <span className="text-xs text-muted-foreground">PDF seleccionado</span>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={handleRemoveFile}
                 aria-label="Quitar archivo"
-                className="text-destructive hover:underline"
+                className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
