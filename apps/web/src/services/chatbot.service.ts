@@ -27,17 +27,6 @@ ensureCatalogo();
 
 // ──────────────── Mock helpers ────────────────
 
-function findCurso(query: string): MockCurso | null {
-  const q = query.toLowerCase();
-  return (
-    catalogo.cursos.find(
-      (c) =>
-        c.nombre_curso.toLowerCase().includes(q) ||
-        c.descripcion_curso?.toLowerCase().includes(q),
-    ) ?? null
-  );
-}
-
 function findServiciosByCurso(codTipoCurso: number): MockServicio[] {
   return catalogo.servicios.filter((s) => s.tipo_curso === codTipoCurso);
 }
@@ -109,28 +98,6 @@ function formatSegmentos(): string {
   );
 }
 
-function buildCourseCard(curso: MockCurso): {
-  name: string;
-  segment: string;
-  price: number;
-  description: string;
-  imageUrl: string;
-  slug: string;
-  id: number;
-} {
-  const segmento = catalogo.segmentos.find((s) => s.segmento_curso === curso.segmento_curso);
-  const servicio = catalogo.servicios.find((s) => s.tipo_curso === curso.cod_tipo_curso);
-  return {
-    id: curso.cod_tipo_curso,
-    name: curso.nombre_curso,
-    segment: segmento?.nombre_segmento ?? '',
-    price: servicio?.tarifa_curso ?? 0,
-    description: curso.descripcion_curso ?? '',
-    imageUrl: `https://picsum.photos/seed/curso-cee-${curso.cod_tipo_curso}/800/450`,
-    slug: curso.slug,
-  };
-}
-
 // ──────────────── Mock Chatbot Engine ────────────────
 
 function classifyIntentMock(msg: string): string {
@@ -190,7 +157,7 @@ function classifyIntentMock(msg: string): string {
   return 'desconocido';
 }
 
-async function generateMockResponse(msg: string, history: ChatMessage[], context: ReturnType<typeof useChatStore.getState>['context']): Promise<{ text: string; actions?: ChatAction[] }> {
+async function generateMockResponse(msg: string, _history: ChatMessage[], context: ReturnType<typeof useChatStore.getState>['context']): Promise<{ text: string; actions?: ChatAction[] }> {
   const intent = classifyIntentMock(msg);
   const m = msg.toLowerCase();
   let foundCurso: MockCurso | null = null;
@@ -258,8 +225,7 @@ Estoy aquí para ayudarte con información sobre nuestros cursos, horarios, prec
         .filter((seg) => catalogo.cursos.some((c) => c.segmento_curso === seg.segmento_curso))
         .map((seg) => {
           const conteo = catalogo.cursos.filter((c) => c.segmento_curso === seg.segmento_curso).length;
-        const primeros = catalogo.cursos.slice(0, 2).find((c) => c.segmento_curso === seg.segmento_curso);
-        return {
+          return {
           id: seg.segmento_curso,
           name: seg.nombre_segmento,
           segment: '',
@@ -494,34 +460,6 @@ const TOOL_DEFS = [
     },
   },
 ];
-
-async function llamarGroq(messages: GroqMessage[]): Promise<GroqMessage> {
-  const body: Record<string, unknown> = {
-    model: 'llama-3.3-70b-versatile',
-    messages,
-    max_tokens: 1024,
-    temperature: 0.7,
-    tools: TOOL_DEFS,
-  };
-
-  const res = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    console.error(`Groq API error ${res.status}:`, err);
-    throw new Error(`Groq API error ${res.status}: ${err}`);
-  }
-
-  const json = await res.json();
-  return json.choices[0].message;
-}
 
 function ejecutarToolLocal(name: string, args: Record<string, unknown>): unknown {
   const cursoId = args.curso_id ? Number(args.curso_id) : 0;
