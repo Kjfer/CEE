@@ -150,13 +150,13 @@ export default function StudentFormPage() {
   );
 
   return (
-    <section className="grid gap-6">
-      <div>
+    <section className="mx-auto max-w-3xl grid gap-6">
+      <div className="text-center">
         <h1 className="text-2xl font-bold text-gray-900">{isEdit ? 'Editar alumno' : 'Nuevo alumno'}</h1>
         <p className="mt-0.5 text-sm text-[#A9A9A9]">Completa los datos del alumno del CEE.</p>
       </div>
 
-      <form className="grid max-w-2xl gap-8" onSubmit={handleSubmit} noValidate>
+      <form className="grid gap-8 w-full bg-white p-6 md:p-8 rounded-xl shadow-sm border" onSubmit={handleSubmit} noValidate>
 
         {/* ── Datos personales ── */}
         <fieldset className="grid gap-5 rounded-xl border border-gray-200 p-5">

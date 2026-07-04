@@ -102,13 +102,13 @@ export default function SaleFormPage() {
   };
 
   return (
-    <section className="grid gap-6">
-      <div>
+    <section className="mx-auto max-w-3xl grid gap-6">
+      <div className="text-center">
         <h1 className="text-2xl font-bold text-gray-900">Registrar inscripción</h1>
         <p className="mt-0.5 text-sm text-[#A9A9A9]">Registra una inscripción manualmente</p>
       </div>
 
-      <form className="grid max-w-2xl gap-5" onSubmit={handleSubmit} noValidate>
+      <form className="grid gap-5 w-full bg-white p-6 md:p-8 rounded-xl shadow-sm border" onSubmit={handleSubmit} noValidate>
         {/* Alumno */}
         <div className="grid gap-1.5">
           <Label htmlFor="studentName">Nombre del alumno</Label>

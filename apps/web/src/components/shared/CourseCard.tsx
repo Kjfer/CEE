@@ -22,8 +22,8 @@ export function CourseCard({ course }: CourseCardProps) {
   return (
     <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition duration-200 hover:-translate-y-1 hover:shadow-md">
       <div
-        className="w-full bg-cover bg-center"
-        style={{ aspectRatio: '16 / 9', backgroundImage: CATEGORY_GRADIENTS[course.category] }}
+        className="w-full shrink-0 bg-cover bg-center aspect-video"
+        style={{ backgroundImage: CATEGORY_GRADIENTS[course.category] }}
       >
         <img
           src={course.imageUrl}

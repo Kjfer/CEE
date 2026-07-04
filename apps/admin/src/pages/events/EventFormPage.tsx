@@ -171,15 +171,15 @@ export default function EventFormPage() {
   if (isLoading) return <p className="text-sm text-[#A9A9A9]">Cargando evento...</p>;
 
   return (
-    <section className="grid gap-6">
-      <div>
+    <section className="mx-auto max-w-3xl grid gap-6">
+      <div className="text-center">
         <h1 className="text-2xl font-bold text-gray-900">{isEdit ? 'Editar evento' : 'Nuevo evento'}</h1>
         <p className="mt-0.5 text-sm text-[#A9A9A9]">
           {isEdit ? 'Modifica los datos del evento.' : 'Completa los datos para crear el evento.'}
         </p>
       </div>
 
-      <form className="grid max-w-2xl gap-5" onSubmit={handleSubmit} noValidate>
+      <form className="grid gap-5 w-full bg-white p-6 md:p-8 rounded-xl shadow-sm border" onSubmit={handleSubmit} noValidate>
         {/* Título */}
         <div className="grid gap-1.5">
           <Label htmlFor="title">Título del evento</Label>

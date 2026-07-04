@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { WhyChooseUsSection } from '@/components/home/WhyChooseUsSection';
 import { ROUTES } from '@/constants/routes';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 const VALUES = [
   {
@@ -37,22 +38,21 @@ const VALUES = [
 export default function AboutPage() {
   const statsGridRef = useScrollReveal<HTMLDivElement>({ selector: ':scope > *' });
   const valuesGridRef = useScrollReveal<HTMLDivElement>({ selector: ':scope > *' });
+  const { settings } = useSiteSettings();
 
   return (
     <>
       <PageHeader
         eyebrow="CEE-FIIS"
-        title="Centro de Especialización Ejecutiva"
+        title={settings?.aboutTitle || "Centro de Especialización Ejecutiva"}
         breadcrumb={[{ label: 'Inicio', path: ROUTES.HOME }, { label: 'Nosotros' }]}
         size="md"
       >
         <p className="mt-2 text-lg font-semibold italic text-white/95 sm:text-xl">
-          "Impulsa tu carrera, lidera tu futuro"
+          {settings?.aboutSubtitle || '"Impulsa tu carrera, lidera tu futuro"'}
         </p>
         <p className="mt-3 max-w-2xl text-base text-white/90 sm:text-lg">
-          Formando líderes y profesionales a través de educación ejecutiva de primer nivel desde
-          1999, en alianza con la Universidad Nacional de Ingeniería (UNI) y la Facultad de
-          Ingeniería Industrial y de Sistemas (FIIS)
+          {settings?.aboutDescription || 'Formando líderes y profesionales a través de educación ejecutiva de primer nivel desde 1999, en alianza con la Universidad Nacional de Ingeniería (UNI) y la Facultad de Ingeniería Industrial y de Sistemas (FIIS)'}
         </p>
       </PageHeader>
 
@@ -60,17 +60,13 @@ export default function AboutPage() {
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-8">
           <div>
             <h2 className="text-3xl">Misión</h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Formar profesionales ejecutivos de excelencia a través de programas innovadores que
-              integren teoría y práctica, fomentando el desarrollo integral del talento y su
-              impacto en la transformación de organizaciones
+            <p className="mt-4 text-lg text-muted-foreground whitespace-pre-wrap">
+              {settings?.mission || 'Formar profesionales ejecutivos de excelencia a través de programas innovadores que integren teoría y práctica, fomentando el desarrollo integral del talento y su impacto en la transformación de organizaciones'}
             </p>
 
             <h3 className="mt-8 text-2xl">Visión</h3>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Ser el referente de educación ejecutiva en América Latina, reconocido por la calidad
-              de sus programas, la excelencia de sus docentes y el impacto de sus egresados en la
-              comunidad empresarial global
+            <p className="mt-4 text-lg text-muted-foreground whitespace-pre-wrap">
+              {settings?.vision || 'Ser el referente de educación ejecutiva en América Latina, reconocido por la calidad de sus programas, la excelencia de sus docentes y el impacto de sus egresados en la comunidad empresarial global'}
             </p>
           </div>
 
@@ -79,8 +75,8 @@ export default function AboutPage() {
             style={{ aspectRatio: '4 / 3' }}
           >
             <img
-              src="https://acreditacion.uni.edu.pe/wp-content/uploads/2025/10/250926-FIEE-2-720x340.jpg"
-              alt="Aula del CEE"
+              src={settings?.aboutImageUrl || "https://acreditacion.uni.edu.pe/wp-content/uploads/2025/10/250926-FIEE-2-720x340.jpg"}
+              alt="Instalaciones del CEE"
               className="h-full w-full object-cover"
               loading="lazy"
             />
@@ -92,11 +88,8 @@ export default function AboutPage() {
       <section className="bg-muted py-16 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-center text-3xl">Historia del CEE</h2>
-          <p className="mx-auto mt-4 max-w-3xl text-center text-lg text-muted-foreground">
-            Desde 1999, el Centro de Especialización Ejecutiva ha sido pionero en la formación de
-            profesionales de alto nivel. Nacido como una iniciativa de la Facultad de Ingeniería
-            Industrial y de Sistemas de la Universidad Nacional de Ingeniería, el CEE ha
-            evolucionado para convertirse en un ícono de educación ejecutiva en el país
+          <p className="mx-auto mt-4 max-w-3xl text-center text-lg text-muted-foreground whitespace-pre-wrap">
+            {settings?.history || 'Desde 1999, el Centro de Especialización Ejecutiva ha sido pionero en la formación de profesionales de alto nivel. Nacido como una iniciativa de la Facultad de Ingeniería Industrial y de Sistemas de la Universidad Nacional de Ingeniería, el CEE ha evolucionado para convertirse en un ícono de educación ejecutiva en el país'}
           </p>
 
           <StatsCounter ref={statsGridRef} className="mt-12" />

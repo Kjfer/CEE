@@ -16,6 +16,8 @@ import {
   LogOut,
   ShoppingBag,
   Users,
+  Settings,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authService } from '@/services/auth.service';
@@ -39,6 +41,8 @@ const BOTTOM_ITEMS = [
   { label: 'Alumnos',        path: '/alumnos',         icon: GraduationCap },
   { label: 'Certificados',   path: '/certificados',    icon: Award },
   { label: 'Notificaciones', path: '/notificaciones',  icon: Bell },
+  { label: 'Web (Nosotros)', path: '/configuracion/nosotros', icon: Settings },
+  { label: 'Administradores', path: '/configuracion/administradores', icon: Shield },
   { label: 'Asistente CEE',  path: '/asistente',       icon: Bot },
 ] as const;
 

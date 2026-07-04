@@ -18,6 +18,7 @@ import { ROUTES } from '@/constants/routes';
 import { useCourses } from '@/hooks/useCourses';
 import { useEvents } from '@/hooks/useEvents';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 function getFeaturedCourse<T extends { status: string; startDate: string }>(
   courses: T[],
@@ -37,17 +38,18 @@ const SECTION_ANCHORS = [
   { id: 'blog', label: 'Blog' },
 ];
 
-const HERO_IMAGES = [
-  'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=75',
-  'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1600&q=75',
-  'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1600&q=75',
-];
+// Eliminated hardcoded HERO_IMAGES
 
 export default function HomePage() {
   const [category, setCategory] = useState<CourseCategory | 'Todas'>('Todas');
   const [heroImageIndex, setHeroImageIndex] = useState(0);
   const { courses, isLoading } = useCourses({ category });
   const { events, isLoading: eventsLoading } = useEvents();
+  const { settings } = useSiteSettings();
+  const heroImages = settings?.heroImages?.length 
+    ? settings.heroImages 
+    : ['https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=75'];
+    
   const featuredCourse = getFeaturedCourse(courses);
   const heroRef = useRef<HTMLDivElement>(null);
   const eventosSectionRef = useScrollReveal<HTMLDivElement>({ selector: ':scope > *' });
@@ -59,19 +61,19 @@ export default function HomePage() {
   // Carrusel de imágenes hero
   useEffect(() => {
     const interval = setInterval(() => {
-      setHeroImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+      setHeroImageIndex((prev) => (prev + 1) % heroImages.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [heroImages.length]);
 
   // Funciones de navegación del carrusel
   const handlePrevImage = () => {
-    setHeroImageIndex((prev) => (prev - 1 + HERO_IMAGES.length) % HERO_IMAGES.length);
+    setHeroImageIndex((prev) => (prev - 1 + heroImages.length) % heroImages.length);
   };
 
   const handleNextImage = () => {
-    setHeroImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+    setHeroImageIndex((prev) => (prev + 1) % heroImages.length);
   };
 
   // Animación de entrada del hero
@@ -109,16 +111,20 @@ export default function HomePage() {
                 transform: `translateX(-${heroImageIndex * 100}%)`,
               }}
             >
-              {HERO_IMAGES.map((image, idx) => (
-                <img
+              {heroImages.map((image, idx) => (
+                <div
                   key={idx}
-                  src={image}
-                  alt=""
-                  className="absolute h-full w-full object-cover blur-[1px] scale-105"
+                  className="absolute h-full w-full overflow-hidden"
                   style={{ left: `${idx * 100}%` }}
-                  loading={idx === heroImageIndex ? 'eager' : 'lazy'}
-                  fetchPriority={idx === heroImageIndex ? 'high' : 'low'}
-                />
+                >
+                  <img
+                    src={image}
+                    alt=""
+                    className="h-full w-full object-cover blur-[1px] scale-105"
+                    loading={idx === heroImageIndex ? 'eager' : 'lazy'}
+                    fetchPriority={idx === heroImageIndex ? 'high' : 'low'}
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -160,23 +166,24 @@ export default function HomePage() {
         {/* Imagen (mobile): debajo del texto, a ancho completo */}
         <div className="relative h-48 w-full sm:hidden overflow-hidden">
           <div className="relative h-full w-full">
-            {/* Contenedor de imágenes con animación de deslizamiento */}
-            <div
-              className="absolute h-full w-full transition-transform duration-700"
-              style={{
-                transform: `translateX(-${heroImageIndex * 100}%)`,
-              }}
-            >
-              {HERO_IMAGES.map((image, idx) => (
-                <img
-                  key={idx}
-                  src={image.replace('w=1600', 'w=900')}
-                  alt=""
-                  className="absolute h-full w-full object-cover"
-                  style={{ left: `${idx * 100}%` }}
-                  loading={idx === heroImageIndex ? 'eager' : 'lazy'}
-                />
-              ))}
+            <div className="sm:hidden w-full h-[50vh] relative overflow-hidden">
+              <div
+                className="absolute h-full w-full transition-transform duration-700"
+                style={{
+                  transform: `translateX(-${heroImageIndex * 100}%)`,
+                }}
+              >
+                {heroImages.map((image, idx) => (
+                  <img
+                    key={idx}
+                    src={image}
+                    alt=""
+                    className="absolute h-full w-full object-cover"
+                    style={{ left: `${idx * 100}%` }}
+                    loading="lazy"
+                  />
+                ))}
+              </div>
             </div>
           </div>
           <div className="absolute inset-0 bg-cee-ink/30" />
@@ -195,7 +202,7 @@ export default function HomePage() {
 
           {/* Indicadores de página */}
           <div className="flex gap-3">
-            {HERO_IMAGES.map((_, idx) => (
+            {heroImages.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setHeroImageIndex(idx)}

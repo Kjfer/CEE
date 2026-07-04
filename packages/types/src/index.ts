@@ -450,3 +450,18 @@ export interface DashboardMetrics {
   coursesByCategory: DashboardCategoryPoint[];
   recentSales: DashboardSaleItem[];
 }
+
+// ---------- Configuración del Sitio (Nosotros) ----------
+
+export interface SiteSettings {
+  id: number;
+  aboutTitle: string;
+  aboutSubtitle: string;
+  aboutDescription: string;
+  mission: string;
+  vision: string;
+  history: string;
+  aboutImageUrl: string;
+  heroImages: string[];
+  updatedAt: string;
+}

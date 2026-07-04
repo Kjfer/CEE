@@ -77,4 +77,81 @@ export const settingsService = {
       .single();
     return (data as { value: string } | null)?.value ?? '';
   },
+
+  // ---------- Site Settings (Nosotros) ----------
+  async getSiteSettings() {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('*')
+      .eq('id', 1)
+      .single();
+
+    if (error) throw new Error(`Error al obtener la configuración del sitio: ${error.message}`);
+
+    return {
+      data: {
+        id: data.id,
+        aboutTitle: data.about_title,
+        aboutSubtitle: data.about_subtitle,
+        aboutDescription: data.about_description,
+        mission: data.mission,
+        vision: data.vision,
+        history: data.history,
+        aboutImageUrl: data.about_image_url,
+        heroImages: data.hero_images,
+        updatedAt: data.updated_at,
+      },
+    };
+  },
+
+  async updateSiteSettings(input: Record<string, unknown>) {
+    const payload: Record<string, unknown> = {};
+    if (input.aboutTitle !== undefined) payload.about_title = input.aboutTitle;
+    if (input.aboutSubtitle !== undefined) payload.about_subtitle = input.aboutSubtitle;
+    if (input.aboutDescription !== undefined) payload.about_description = input.aboutDescription;
+    if (input.mission !== undefined) payload.mission = input.mission;
+    if (input.vision !== undefined) payload.vision = input.vision;
+    if (input.history !== undefined) payload.history = input.history;
+    if (input.aboutImageUrl !== undefined) payload.about_image_url = input.aboutImageUrl;
+    if (input.heroImages !== undefined) payload.hero_images = input.heroImages;
+
+    const now = new Date().toISOString();
+    payload.updated_at = now;
+
+    const { data, error } = await supabase
+      .from('site_settings')
+      .update(payload)
+      .eq('id', 1)
+      .select('*')
+      .single();
+
+    if (error) throw new Error(`Error al actualizar la configuración del sitio: ${error.message}`);
+
+    return {
+      data: {
+        id: data.id,
+        aboutTitle: data.about_title,
+        aboutSubtitle: data.about_subtitle,
+        aboutDescription: data.about_description,
+        mission: data.mission,
+        vision: data.vision,
+        history: data.history,
+        aboutImageUrl: data.about_image_url,
+        heroImages: data.hero_images,
+        updatedAt: data.updated_at,
+      },
+    };
+  },
+
+  async uploadSiteImage(file: File): Promise<string> {
+    const ext = file.name.split('.').pop() || 'png';
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage
+      .from('site-images')
+      .upload(path, file, { contentType: file.type });
+
+    if (error) throw new Error('No se pudo subir la imagen del sitio.');
+
+    return supabase.storage.from('site-images').getPublicUrl(path).data.publicUrl;
+  }
 };

@@ -141,10 +141,10 @@ export default function BenefitFormPage() {
   }
 
   return (
-    <section className="grid gap-6">
-      <h1 className="text-2xl font-bold">{isEditMode ? 'Editar beneficio' : 'Nuevo beneficio'}</h1>
+    <section className="mx-auto max-w-3xl grid gap-6">
+      <h1 className="text-2xl font-bold text-center">{isEditMode ? 'Editar beneficio' : 'Nuevo beneficio'}</h1>
 
-      <form className="grid max-w-2xl gap-5" onSubmit={handleSubmit} noValidate>
+      <form className="grid gap-5 w-full bg-white p-6 md:p-8 rounded-xl shadow-sm border" onSubmit={handleSubmit} noValidate>
         <div className="grid gap-1.5">
           <Label htmlFor="title">Título</Label>
           <Input

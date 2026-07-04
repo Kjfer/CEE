@@ -43,6 +43,8 @@ export interface CourseFormInput {
   minStudents: number | null;
   alertDaysBefore: number | null;
   instructorIds: string[];
+  imageFileName?: string | null;
+  imageFile?: File | null;
 }
 
 function buildCourseFromInput(input: CourseFormInput, existing?: Course): Course {
@@ -186,6 +188,20 @@ async function uploadSyllabus(file: File): Promise<string> {
   return supabase.storage.from('syllabus-pdfs').getPublicUrl(path).data.publicUrl;
 }
 
+async function uploadCourseImage(file: File): Promise<string> {
+  const ext = file.name.split('.').pop() || 'png';
+  const path = `${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage
+    .from('course-images')
+    .upload(path, file, { contentType: file.type });
+
+  if (error) {
+    throw new Error('No se pudo subir la imagen del curso.');
+  }
+
+  return supabase.storage.from('course-images').getPublicUrl(path).data.publicUrl;
+}
+
 export const coursesService = {
   async getCourses(): Promise<ApiResponse<Course[]>> {
     if (USE_MOCKS) {
@@ -232,6 +248,7 @@ export const coursesService = {
     }
 
     const syllabusPdfUrl = input.syllabusFile ? await uploadSyllabus(input.syllabusFile) : null;
+    const imageUrl = input.imageFile ? await uploadCourseImage(input.imageFile) : '';
 
     const { data, error } = await supabase
       .from('courses')
@@ -244,7 +261,7 @@ export const coursesService = {
         short_description: input.description.slice(0, 120),
         description: input.description,
         price: input.price,
-        image_url: '',
+        image_url: imageUrl,
         start_date:         input.startDate,
         duration_weeks:     input.durationWeeks,
         schedule_description: input.scheduleDescription,
@@ -293,33 +310,44 @@ export const coursesService = {
         throw new Error(`Curso no encontrado: ${id}`);
       }
       const updated = buildCourseFromInput(input, existing);
-      courses = courses.map((c) => (c.id === id ? updated : c));
-      return delay({ data: updated });
     }
 
-    const payload: Record<string, unknown> = {
+    const syllabusPdfUrl = input.syllabusFile
+      ? await uploadSyllabus(input.syllabusFile)
+      : input.syllabusFileName === null ? null : undefined;
+
+    const newImageUrl = input.imageFile
+      ? await uploadCourseImage(input.imageFile)
+      : input.imageFileName === null ? '' : undefined;
+
+    const updates: Partial<CourseRow> = {
       title: input.title,
+      slug: slugify(input.title),
       category: input.category,
       modality: input.modality,
+      short_description: input.description.slice(0, 120),
       description: input.description,
       price: input.price,
       start_date:         input.startDate,
       duration_weeks:     input.durationWeeks,
       schedule_description: input.scheduleDescription,
-      max_students:       input.maxStudents,
-      min_students:       input.minStudents,
-      alert_days_before:  input.alertDaysBefore,
+      max_students:     input.maxStudents,
+      min_students:     input.minStudents,
+      alert_days_before: input.alertDaysBefore,
       moodle_course_id: input.moodleCourseId,
       status: input.status,
     };
 
-    if (input.syllabusFile) {
-      payload.syllabus_pdf_url = await uploadSyllabus(input.syllabusFile);
+    if (syllabusPdfUrl !== undefined) {
+      updates.syllabus_pdf_url = syllabusPdfUrl;
+    }
+    if (newImageUrl !== undefined) {
+      updates.image_url = newImageUrl;
     }
 
     const { data, error } = await supabase
       .from('courses')
-      .update(payload)
+      .update(updates)
       .eq('id', id)
       .select(COURSE_SELECT)
       .single();

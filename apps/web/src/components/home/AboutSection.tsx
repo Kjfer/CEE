@@ -1,18 +1,21 @@
 import { Link } from 'react-router-dom';
 import { BrochureDownloadButton } from '@/components/shared/BrochureDownloadButton';
 import { ROUTES } from '@/constants/routes';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 export function AboutSection() {
+  const { settings } = useSiteSettings();
+
   return (
     <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8">
       <div>
         <p className="text-xs font-medium uppercase tracking-widest text-cee-red">Nosotros</p>
-        <h2 className="mt-1 text-2xl font-bold">Impulsa tu carrera, lidera tu futuro</h2>
-        <p className="mt-4 text-base text-muted-foreground">
-          El Centro de Especialización Ejecutiva nace de la Facultad de Ingeniería Industrial y de
-          Sistemas de la Universidad Nacional de Ingeniería para formar profesionales capaces de
-          liderar la transformación de sus organizaciones, integrando teoría y práctica en cada
-          programa.
+        <h2 className="mt-1 text-2xl font-bold">
+          {settings?.aboutSubtitle ? settings.aboutSubtitle.replace(/['"]/g, '') : "Impulsa tu carrera, lidera tu futuro"}
+        </h2>
+        <p className="mt-4 text-base text-muted-foreground whitespace-pre-wrap">
+          {settings?.history ? (settings.history.length > 200 ? settings.history.substring(0, 200) + '...' : settings.history) : 
+            `El Centro de Especialización Ejecutiva nace de la Facultad de Ingeniería Industrial y de Sistemas de la Universidad Nacional de Ingeniería para formar profesionales capaces de liderar la transformación de sus organizaciones, integrando teoría y práctica en cada programa.`}
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
@@ -30,7 +33,7 @@ export function AboutSection() {
         style={{ aspectRatio: '4 / 3' }}
       >
         <img
-          src="https://acreditacion.uni.edu.pe/wp-content/uploads/2025/10/250926-FIEE-2-720x340.jpg"
+          src={settings?.aboutImageUrl || "https://acreditacion.uni.edu.pe/wp-content/uploads/2025/10/250926-FIEE-2-720x340.jpg"}
           alt="Instalaciones de la FIIS-UNI"
           className="h-full w-full object-cover"
           loading="lazy"
