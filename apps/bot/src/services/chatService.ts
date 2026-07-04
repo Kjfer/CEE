@@ -51,15 +51,11 @@ function extractSQL(text: string): string | null {
   return null;
 }
 
-// ── Main service ──────────────────────────────────────────────────────────────
+// ── Step 1 (compartido) — genera SQL y ejecuta la consulta ───────────────────
 
-export async function chatWithData(question: string, history: Message[]): Promise<string> {
-  const historyMessages = history.map((m) => ({
-    role: m.role as 'user' | 'assistant',
-    content: m.content,
-  }));
+type HistoryMessage = { role: 'user' | 'assistant'; content: string };
 
-  // Step 1 — ask Groq to generate SQL
+async function resolveDataContext(question: string, historyMessages: HistoryMessage[]): Promise<string> {
   const sqlResponse = await groq.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [
@@ -74,37 +70,47 @@ export async function chatWithData(question: string, history: Message[]): Promis
   const rawSQL = sqlResponse.choices[0]?.message?.content ?? '';
   const sql = extractSQL(rawSQL);
 
-  let dataContext = '';
-
   if (sql && /^SELECT\b/i.test(sql)) {
-    // Step 2 — execute SQL via Supabase RPC
     const { data, error } = await supabase.rpc('execute_query', { query_text: sql });
 
     if (error) {
       console.error('[chatService] execute_query error:', error.message, '| SQL:', sql);
-      dataContext = `Error al ejecutar la consulta: ${error.message}`;
-    } else {
-      dataContext = `Resultados de la consulta:\n${JSON.stringify(data, null, 2)}`;
+      return `Error al ejecutar la consulta: ${error.message}`;
     }
-  } else {
-    console.warn('[chatService] No se extrajo SQL válido del response:', rawSQL);
-    dataContext = '';
+    return `Resultados de la consulta:\n${JSON.stringify(data, null, 2)}`;
   }
 
-  // Step 3 — generate natural language response with the data
+  console.warn('[chatService] No se extrajo SQL válido del response:', rawSQL);
+  return '';
+}
+
+function buildFinalMessages(question: string, historyMessages: HistoryMessage[], dataContext: string) {
+  return [
+    { role: 'system' as const, content: RESPONSE_SYSTEM_PROMPT },
+    ...historyMessages,
+    { role: 'user' as const, content: question },
+    {
+      role: 'assistant' as const,
+      content: dataContext
+        ? `He consultado la base de datos. ${dataContext}\n\nBasándome en estos datos, respondo:`
+        : 'No pude obtener datos específicos.',
+    },
+  ];
+}
+
+// ── Main service (respuesta completa, sin streaming) ─────────────────────────
+
+export async function chatWithData(question: string, history: Message[]): Promise<string> {
+  const historyMessages = history.map((m) => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+  }));
+
+  const dataContext = await resolveDataContext(question, historyMessages);
+
   const finalResponse = await groq.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
-    messages: [
-      { role: 'system', content: RESPONSE_SYSTEM_PROMPT },
-      ...historyMessages,
-      { role: 'user', content: question },
-      {
-        role: 'assistant',
-        content: dataContext
-          ? `He consultado la base de datos. ${dataContext}\n\nBasándome en estos datos, respondo:`
-          : 'No pude obtener datos específicos.',
-      },
-    ],
+    messages: buildFinalMessages(question, historyMessages, dataContext),
     max_tokens: 512,
     temperature: 0.4,
   });
@@ -113,4 +119,40 @@ export async function chatWithData(question: string, history: Message[]): Promis
     finalResponse.choices[0]?.message?.content ??
     'Lo siento, no pude generar una respuesta en este momento.'
   );
+}
+
+// ── Variante streaming — solo el paso 2 (lenguaje natural) se streamea ───────
+// El paso 1 (generación de SQL) no es visible para el usuario, así que se
+// resuelve por completo antes de empezar a emitir tokens.
+
+export async function chatWithDataStream(
+  question: string,
+  history: Message[],
+  onToken: (token: string) => void,
+): Promise<string> {
+  const historyMessages = history.map((m) => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+  }));
+
+  const dataContext = await resolveDataContext(question, historyMessages);
+
+  const stream = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: buildFinalMessages(question, historyMessages, dataContext),
+    max_tokens: 512,
+    temperature: 0.4,
+    stream: true,
+  });
+
+  let full = '';
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content ?? '';
+    if (delta) {
+      full += delta;
+      onToken(delta);
+    }
+  }
+
+  return full || 'Lo siento, no pude generar una respuesta en este momento.';
 }

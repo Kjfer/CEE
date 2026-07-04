@@ -1,4 +1,4 @@
-import { chatWithData } from '../services/chatService';
+import { chatWithData, chatWithDataStream } from '../services/chatService';
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -7,4 +7,12 @@ export interface Message {
 
 export async function handleQuestion(question: string, history: Message[]): Promise<string> {
   return chatWithData(question, history);
+}
+
+export async function handleQuestionStream(
+  question: string,
+  history: Message[],
+  onToken: (token: string) => void,
+): Promise<string> {
+  return chatWithDataStream(question, history, onToken);
 }
