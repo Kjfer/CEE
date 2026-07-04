@@ -3,11 +3,13 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { mockAdminUser } from '@/mocks/auth';
 import { useToast } from '@/hooks/useToast';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/store/authStore';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
 interface FormErrors {
   email?: string;
@@ -18,7 +20,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { error } = useToast();
   const { isAuthenticated } = useAuthStore();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => (USE_MOCKS ? mockAdminUser.email : ''));
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,6 +61,11 @@ export default function LoginPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Acceso exclusivo para administradores del backoffice.
         </p>
+        {USE_MOCKS && (
+          <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            Modo demo activo: usa {mockAdminUser.email} y cualquier contraseña no vacía.
+          </p>
+        )}
 
         <form className="mt-6 grid gap-4" onSubmit={handleSubmit} noValidate>
           <div className="grid gap-1.5">
@@ -68,6 +75,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               aria-invalid={Boolean(errors.email)}
             />
             {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
@@ -80,6 +88,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               aria-invalid={Boolean(errors.password)}
             />
             {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
