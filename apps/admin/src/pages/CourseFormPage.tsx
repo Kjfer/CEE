@@ -599,7 +599,7 @@ export default function CourseFormPage() {
               </Button>
             </div>
 
-            <div className="grid gap-1.5">
+            <div className="grid gap-1.5 min-w-0">
               <Label htmlFor="syllabus">Sílabo (PDF)</Label>
               {!syllabusFileName ? (
                 <div className="relative group cursor-pointer">
@@ -627,13 +627,13 @@ export default function CourseFormPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
-                  <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+                <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20 w-full overflow-hidden gap-2">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="p-2 bg-background/80 rounded-md shrink-0">
                       <FileText className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="flex flex-col truncate min-w-0 flex-1">
-                      <span className="text-sm font-medium truncate" title={syllabusFileName}>{syllabusFileName}</span>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-sm font-medium truncate block w-full" title={syllabusFileName}>{syllabusFileName}</span>
                     </div>
                   </div>
                   <button

@@ -15,7 +15,33 @@ export type CourseStatus = 'published' | 'draft' | 'review';
 
 export type UserRole = 'admin' | 'student';
 
-// ---------- Plana docente ----------
+export interface ExperienceItem {
+  id: string;
+  role: string;
+  company: string;
+  startYear: string;
+  endYear: string;
+}
+
+export interface EducationItem {
+  id: string;
+  degree: string;
+  institution: string;
+  startYear: string;
+  endYear: string;
+}
+
+export interface Testimonial {
+  id: string;
+  text: string;
+  author: string;
+}
+
+export interface Publication {
+  id: string;
+  title: string;
+  url: string;
+}
 
 export interface Instructor {
   id: string;
@@ -25,6 +51,11 @@ export interface Instructor {
   photoUrl: string;
   linkedinUrl?: string;
   specialties: string[];
+  experience: ExperienceItem[];
+  education: EducationItem[];
+  rating: number;
+  testimonials: Testimonial[];
+  publications: Publication[];
 }
 
 // ---------- Profesores (menú "Profesores" del Navbar + perfil completo) ----------

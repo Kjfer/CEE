@@ -1,4 +1,4 @@
-import type { ApiResponse, Instructor } from '@cee/types';
+import type { ApiResponse, Instructor, ExperienceItem, EducationItem, Testimonial, Publication } from '@cee/types';
 import { supabase } from '@/lib/supabase';
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
@@ -16,6 +16,11 @@ let mockInstructors: Instructor[] = [
     photoUrl: 'https://i.pravatar.cc/150?u=juan',
     linkedinUrl: 'https://linkedin.com/in/juanperez',
     specialties: ['React', 'Node.js'],
+    experience: [],
+    education: [],
+    rating: 0,
+    testimonials: [],
+    publications: [],
   },
   {
     id: 'i-2',
@@ -25,6 +30,11 @@ let mockInstructors: Instructor[] = [
     photoUrl: 'https://i.pravatar.cc/150?u=maria',
     linkedinUrl: '',
     specialties: ['Python', 'Machine Learning', 'Big Data'],
+    experience: [],
+    education: [],
+    rating: 0,
+    testimonials: [],
+    publications: [],
   },
 ];
 
@@ -35,6 +45,11 @@ export interface InstructorFormInput {
   photoUrl: string;
   linkedinUrl: string;
   specialties: string[];
+  experience: ExperienceItem[];
+  education: EducationItem[];
+  rating: number;
+  testimonials: Testimonial[];
+  publications: Publication[];
 }
 
 interface InstructorRow {
@@ -45,6 +60,11 @@ interface InstructorRow {
   photo_url: string;
   linkedin_url?: string;
   specialties?: string[];
+  experience?: ExperienceItem[];
+  education?: EducationItem[];
+  rating?: number;
+  testimonials?: Testimonial[];
+  publications?: Publication[];
 }
 
 function formatInstructor(row: InstructorRow): Instructor {
@@ -56,6 +76,11 @@ function formatInstructor(row: InstructorRow): Instructor {
     photoUrl: row.photo_url,
     linkedinUrl: row.linkedin_url,
     specialties: row.specialties ?? [],
+    experience: row.experience ?? [],
+    education: row.education ?? [],
+    rating: row.rating ?? 0,
+    testimonials: row.testimonials ?? [],
+    publications: row.publications ?? [],
   };
 }
 
@@ -105,6 +130,11 @@ export const instructorsService = {
         photoUrl: input.photoUrl || 'https://i.pravatar.cc/150',
         linkedinUrl: input.linkedinUrl,
         specialties: input.specialties,
+        experience: input.experience,
+        education: input.education,
+        rating: input.rating,
+        testimonials: input.testimonials,
+        publications: input.publications,
       };
       mockInstructors.push(newInstructor);
       return delay({ data: newInstructor });
@@ -117,6 +147,11 @@ export const instructorsService = {
       photo_url: input.photoUrl,
       linkedin_url: input.linkedinUrl || null,
       specialties: input.specialties,
+      experience: input.experience,
+      education: input.education,
+      rating: input.rating,
+      testimonials: input.testimonials,
+      publications: input.publications,
     };
 
     const { data, error } = await supabase
@@ -146,6 +181,11 @@ export const instructorsService = {
       photo_url: input.photoUrl,
       linkedin_url: input.linkedinUrl || null,
       specialties: input.specialties,
+      experience: input.experience,
+      education: input.education,
+      rating: input.rating,
+      testimonials: input.testimonials,
+      publications: input.publications,
     };
 
     const { data, error } = await supabase

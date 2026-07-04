@@ -16,6 +16,11 @@ const INITIAL_VALUES: InstructorFormInput = {
   photoUrl: '',
   linkedinUrl: '',
   specialties: [],
+  experience: [],
+  education: [],
+  rating: 0,
+  testimonials: [],
+  publications: [],
 };
 
 type FormErrors = Partial<Record<keyof InstructorFormInput, string>>;
@@ -64,6 +69,11 @@ export default function InstructorFormPage() {
           photoUrl: res.data.photoUrl,
           linkedinUrl: res.data.linkedinUrl || '',
           specialties: res.data.specialties || [],
+          experience: res.data.experience || [],
+          education: res.data.education || [],
+          rating: res.data.rating || 0,
+          testimonials: res.data.testimonials || [],
+          publications: res.data.publications || [],
         });
         if (res.data.photoUrl) setPhotoPreview(res.data.photoUrl);
       })
@@ -102,6 +112,33 @@ export default function InstructorFormPage() {
     setPhotoPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     setValues(prev => ({ ...prev, photoUrl: '' }));
+  };
+
+  const addArrayItem = <K extends 'experience' | 'education' | 'testimonials' | 'publications'>(
+    field: K,
+    newItem: any
+  ) => {
+    setValues((prev) => ({ ...prev, [field]: [...prev[field], newItem] }));
+  };
+
+  const updateArrayItem = <K extends 'experience' | 'education' | 'testimonials' | 'publications'>(
+    field: K,
+    index: number,
+    prop: string,
+    val: string
+  ) => {
+    const newArr = [...values[field]] as any[];
+    newArr[index] = { ...newArr[index], [prop]: val };
+    setValues({ ...values, [field]: newArr });
+  };
+
+  const removeArrayItem = <K extends 'experience' | 'education' | 'testimonials' | 'publications'>(
+    field: K,
+    index: number
+  ) => {
+    const newArr = [...values[field]];
+    newArr.splice(index, 1);
+    setValues({ ...values, [field]: newArr });
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -236,17 +273,109 @@ export default function InstructorFormPage() {
             id="specialties"
             placeholder="Ej. Finanzas, Liderazgo..."
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === 'Enter' || e.key === ',') {
                 e.preventDefault();
                 const input = e.currentTarget;
-                const value = input.value.trim();
+                const value = input.value.replace(/,/g, '').trim();
                 if (value && !values.specialties.includes(value)) {
                   setValues({ ...values, specialties: [...values.specialties, value] });
                   input.value = '';
                 }
               }
             }}
+            onBlur={(e) => {
+              const input = e.currentTarget;
+              const value = input.value.replace(/,/g, '').trim();
+              if (value && !values.specialties.includes(value)) {
+                setValues({ ...values, specialties: [...values.specialties, value] });
+                input.value = '';
+              }
+            }}
           />
+        </div>
+
+        <div className="grid gap-1.5 border-t pt-4">
+          <Label className="text-lg">Experiencia Laboral (Timeline)</Label>
+          {values.experience.map((exp, idx) => (
+            <div key={exp.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-muted/20 p-3 rounded-lg border">
+              <Input className="sm:col-span-4" placeholder="Cargo" value={exp.role} onChange={(e) => updateArrayItem('experience', idx, 'role', e.target.value)} />
+              <Input className="sm:col-span-4" placeholder="Empresa" value={exp.company} onChange={(e) => updateArrayItem('experience', idx, 'company', e.target.value)} />
+              <Input className="sm:col-span-1" placeholder="Inicio" value={exp.startYear} onChange={(e) => updateArrayItem('experience', idx, 'startYear', e.target.value)} />
+              <Input className="sm:col-span-1" placeholder="Fin" value={exp.endYear} onChange={(e) => updateArrayItem('experience', idx, 'endYear', e.target.value)} />
+              <Button type="button" variant="ghost" size="icon" className="sm:col-span-2 text-destructive" onClick={() => removeArrayItem('experience', idx)}>
+                <X className="h-4 w-4" /> Eliminar
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => addArrayItem('experience', { id: Date.now().toString(), role: '', company: '', startYear: '', endYear: '' })}>
+            + Añadir Experiencia
+          </Button>
+        </div>
+
+        <div className="grid gap-1.5 border-t pt-4">
+          <Label className="text-lg">Formación Académica (Timeline)</Label>
+          {values.education.map((edu, idx) => (
+            <div key={edu.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-muted/20 p-3 rounded-lg border">
+              <Input className="sm:col-span-4" placeholder="Grado/Título" value={edu.degree} onChange={(e) => updateArrayItem('education', idx, 'degree', e.target.value)} />
+              <Input className="sm:col-span-4" placeholder="Institución" value={edu.institution} onChange={(e) => updateArrayItem('education', idx, 'institution', e.target.value)} />
+              <Input className="sm:col-span-1" placeholder="Inicio" value={edu.startYear} onChange={(e) => updateArrayItem('education', idx, 'startYear', e.target.value)} />
+              <Input className="sm:col-span-1" placeholder="Fin" value={edu.endYear} onChange={(e) => updateArrayItem('education', idx, 'endYear', e.target.value)} />
+              <Button type="button" variant="ghost" size="icon" className="sm:col-span-2 text-destructive" onClick={() => removeArrayItem('education', idx)}>
+                <X className="h-4 w-4" /> Eliminar
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => addArrayItem('education', { id: Date.now().toString(), degree: '', institution: '', startYear: '', endYear: '' })}>
+            + Añadir Estudio
+          </Button>
+        </div>
+
+        <div className="grid gap-1.5 border-t pt-4">
+          <Label className="text-lg">Calificación Promedio</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              max="5"
+              className="w-24"
+              value={values.rating}
+              onChange={(e) => setValues({ ...values, rating: parseFloat(e.target.value) || 0 })}
+            />
+            <span className="text-sm text-muted-foreground">Estrellas (0.0 a 5.0)</span>
+          </div>
+        </div>
+
+        <div className="grid gap-1.5 border-t pt-4">
+          <Label className="text-lg">Testimonios</Label>
+          {values.testimonials.map((test, idx) => (
+            <div key={test.id} className="grid grid-cols-1 gap-2 bg-muted/20 p-3 rounded-lg border">
+              <Input placeholder="Autor (Ej. Juan P.)" value={test.author} onChange={(e) => updateArrayItem('testimonials', idx, 'author', e.target.value)} />
+              <Textarea placeholder="Testimonio..." value={test.text} onChange={(e) => updateArrayItem('testimonials', idx, 'text', e.target.value)} />
+              <Button type="button" variant="ghost" size="sm" className="w-fit text-destructive" onClick={() => removeArrayItem('testimonials', idx)}>
+                Eliminar Testimonio
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => addArrayItem('testimonials', { id: Date.now().toString(), text: '', author: '' })}>
+            + Añadir Testimonio
+          </Button>
+        </div>
+
+        <div className="grid gap-1.5 border-t pt-4">
+          <Label className="text-lg">Publicaciones / Artículos</Label>
+          {values.publications.map((pub, idx) => (
+            <div key={pub.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-muted/20 p-3 rounded-lg border">
+              <Input className="sm:col-span-5" placeholder="Título del artículo" value={pub.title} onChange={(e) => updateArrayItem('publications', idx, 'title', e.target.value)} />
+              <Input className="sm:col-span-5" placeholder="URL (https://...)" value={pub.url} onChange={(e) => updateArrayItem('publications', idx, 'url', e.target.value)} />
+              <Button type="button" variant="ghost" size="icon" className="sm:col-span-2 text-destructive" onClick={() => removeArrayItem('publications', idx)}>
+                <X className="h-4 w-4" /> Eliminar
+              </Button>
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => addArrayItem('publications', { id: Date.now().toString(), title: '', url: '' })}>
+            + Añadir Publicación
+          </Button>
         </div>
 
         <div className="grid gap-1.5">

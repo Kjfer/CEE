@@ -15,6 +15,11 @@ interface TeacherRow {
   photo_url: string;
   linkedin_url?: string;
   specialties?: string[];
+  experience?: any[];
+  education?: any[];
+  rating?: number;
+  testimonials?: any[];
+  publications?: any[];
 }
 
 function formatTeacher(row: TeacherRow): Teacher {
@@ -30,6 +35,11 @@ function formatTeacher(row: TeacherRow): Teacher {
     photoUrl: row.photo_url,
     linkedinUrl: row.linkedin_url,
     specialties: row.specialties ?? [],
+    experience: row.experience ?? [],
+    education: row.education ?? [],
+    rating: row.rating ?? 0,
+    testimonials: row.testimonials ?? [],
+    publications: row.publications ?? [],
     activeCourses: [],
   };
 }
