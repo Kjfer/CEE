@@ -96,6 +96,8 @@ export interface User {
   email: string;
   role: UserRole;
   avatarUrl: string;
+  is_superadmin?: boolean;
+  is_active?: boolean;
 }
 
 // ---------- Historial del chat (Asistente CEE) ----------

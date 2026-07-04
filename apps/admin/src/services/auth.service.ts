@@ -14,6 +14,8 @@ interface ProfileRow {
   email: string;
   role: User['role'];
   avatar_url: string | null;
+  is_superadmin: boolean;
+  is_active: boolean;
 }
 
 function formatProfile(row: ProfileRow): User {
@@ -23,6 +25,8 @@ function formatProfile(row: ProfileRow): User {
     email: row.email,
     role: row.role,
     avatarUrl: row.avatar_url ?? '',
+    is_superadmin: row.is_superadmin,
+    is_active: row.is_active,
   };
 }
 

@@ -30,6 +30,8 @@ const SecretariaChat = lazy(() => import('@/pages/SecretariaChat'));
 const BotPage = lazy(() => import('@/pages/BotPage'));
 const AccessDeniedPage = lazy(() => import('@/pages/AccessDeniedPage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 
 function withSuspense(element: JSX.Element) {
   return <Suspense fallback={<PageLoader />}>{element}</Suspense>;
@@ -37,6 +39,8 @@ function withSuspense(element: JSX.Element) {
 
 export const router = createBrowserRouter([
   { path: '/login', element: withSuspense(<LoginPage />) },
+  { path: '/forgot-password', element: withSuspense(<ForgotPasswordPage />) },
+  { path: '/reset-password', element: withSuspense(<ResetPasswordPage />) },
   { path: '/acceso-denegado', element: withSuspense(<AccessDeniedPage />) },
   {
     element: <ProtectedRoute requiredRole="admin" />,

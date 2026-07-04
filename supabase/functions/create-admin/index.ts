@@ -26,16 +26,16 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseUserClient.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
-    // Verificar si el usuario que llama es admin
+    // Verificar si el usuario que llama es superadmin
     const { data: profile, error: profileError } = await supabaseUserClient
       .from('profiles')
-      .select('role')
+      .select('is_superadmin')
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile) {
-      // Si no hay perfil, lo dejamos pasar por ahora para que pueda crear el primer admin.
-      // throw new Error('Forbidden: Only admins can create other admins.');
+    if (profileError || !profile || !profile.is_superadmin) {
+      // Devolver error si no es superadmin
+      throw new Error('Forbidden: Solo los Super Administradores pueden crear otros administradores.');
     }
 
     const { email, password, name } = await req.json();

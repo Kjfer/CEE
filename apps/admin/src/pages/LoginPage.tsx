@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -91,6 +91,28 @@ export default function LoginPage() {
               autoComplete="current-password"
               aria-invalid={Boolean(errors.password)}
             />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-cee-red focus:ring-cee-red border-slate-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900">
+                  Recordarme
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <Link
+                  to="/forgot-password"
+                  className="font-medium text-cee-red hover:text-cee-red-dark"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
+            </div>
             {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
           </div>
 

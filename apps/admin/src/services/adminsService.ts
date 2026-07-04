@@ -6,6 +6,8 @@ export interface AdminProfile {
   name: string;
   email: string;
   role: 'admin';
+  is_active: boolean;
+  is_superadmin: boolean;
   created_at: string;
 }
 
@@ -42,6 +44,21 @@ export const adminsService = {
       return { data: null, error: null };
     } catch (e: any) {
       return { data: null, error: e.message || 'Error al crear administrador' };
+    }
+  },
+
+  async toggleAdminStatus(targetUserId: string, action: 'toggle_status' | 'promote', isActive?: boolean): Promise<ApiResponse<null>> {
+    try {
+      const { data, error } = await supabase.functions.invoke('toggle-admin-status', {
+        body: { targetUserId, action, isActive },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      return { data: null, error: null };
+    } catch (e: any) {
+      return { data: null, error: e.message || 'Error al ejecutar la acción' };
     }
   }
 };
