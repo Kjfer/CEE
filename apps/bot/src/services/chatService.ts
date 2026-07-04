@@ -51,11 +51,52 @@ function extractSQL(text: string): string | null {
   return null;
 }
 
+// ── Caché de consultas SQL frecuentes ─────────────────────────────────────────
+// Solo se cachea el resultado del paso 1 (SQL generado + datos obtenidos), no
+// la respuesta final en lenguaje natural: así se evita repetir la llamada a
+// Groq + el RPC a Supabase para preguntas iguales/similares recientes, pero el
+// paso 2 se sigue generando siempre para mantener variedad en las respuestas.
+const QUERY_CACHE_TTL_MS = 10 * 60_000;
+const QUERY_CACHE_MAX_ENTRIES = 50;
+
+const queryCache = new Map<string, { dataContext: string; ts: number }>();
+
+function normalizeQuestion(question: string): string {
+  return question.trim().toLowerCase();
+}
+
+function getCachedDataContext(question: string): string | undefined {
+  const key = normalizeQuestion(question);
+  const entry = queryCache.get(key);
+  if (!entry) return undefined;
+
+  if (Date.now() - entry.ts > QUERY_CACHE_TTL_MS) {
+    queryCache.delete(key);
+    return undefined;
+  }
+  return entry.dataContext;
+}
+
+function setCachedDataContext(question: string, dataContext: string): void {
+  const key = normalizeQuestion(question);
+  if (!queryCache.has(key) && queryCache.size >= QUERY_CACHE_MAX_ENTRIES) {
+    const oldestKey = queryCache.keys().next().value;
+    if (oldestKey !== undefined) queryCache.delete(oldestKey);
+  }
+  queryCache.set(key, { dataContext, ts: Date.now() });
+}
+
 // ── Step 1 (compartido) — genera SQL y ejecuta la consulta ───────────────────
 
 type HistoryMessage = { role: 'user' | 'assistant'; content: string };
 
 async function resolveDataContext(question: string, historyMessages: HistoryMessage[]): Promise<string> {
+  const cached = getCachedDataContext(question);
+  if (cached !== undefined) {
+    console.log('[chatService] Cache hit para pregunta:', normalizeQuestion(question));
+    return cached;
+  }
+
   const sqlResponse = await groq.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [
@@ -70,18 +111,24 @@ async function resolveDataContext(question: string, historyMessages: HistoryMess
   const rawSQL = sqlResponse.choices[0]?.message?.content ?? '';
   const sql = extractSQL(rawSQL);
 
+  let dataContext: string;
+
   if (sql && /^SELECT\b/i.test(sql)) {
     const { data, error } = await supabase.rpc('execute_query', { query_text: sql });
 
     if (error) {
       console.error('[chatService] execute_query error:', error.message, '| SQL:', sql);
-      return `Error al ejecutar la consulta: ${error.message}`;
+      dataContext = `Error al ejecutar la consulta: ${error.message}`;
+    } else {
+      dataContext = `Resultados de la consulta:\n${JSON.stringify(data, null, 2)}`;
     }
-    return `Resultados de la consulta:\n${JSON.stringify(data, null, 2)}`;
+  } else {
+    console.warn('[chatService] No se extrajo SQL válido del response:', rawSQL);
+    dataContext = '';
   }
 
-  console.warn('[chatService] No se extrajo SQL válido del response:', rawSQL);
-  return '';
+  setCachedDataContext(question, dataContext);
+  return dataContext;
 }
 
 function buildFinalMessages(question: string, historyMessages: HistoryMessage[], dataContext: string) {
