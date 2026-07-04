@@ -7,6 +7,7 @@ import {
   DashboardSummaryKpis,
   DashboardSummaryCategoryPoint,
 } from './services/dashboardSummaryService';
+import { forwardChatCompletion, ChatCompletionProxyRequest } from './services/groqProxyService';
 
 const app = express();
 app.use(express.json());
@@ -88,6 +89,24 @@ app.post('/api/dashboard-summary', (req: Request, res: Response) => {
     .catch((err: Error) => {
       console.error('[api/dashboard-summary] Error al generar el resumen:', err);
       res.status(500).json({ error: 'No se pudo generar el resumen.' });
+    });
+});
+
+app.post('/api/chat-completions', chatRateLimiter, (req: Request, res: Response) => {
+  const { userId: _userId, ...groqPayload } = req.body as ChatCompletionProxyRequest & { userId?: string };
+
+  if (!groqPayload.model || !groqPayload.messages) {
+    res.status(400).json({ error: 'Los campos "model" y "messages" son requeridos.' });
+    return;
+  }
+
+  forwardChatCompletion(groqPayload)
+    .then((completion) => {
+      res.json(completion);
+    })
+    .catch((err: Error) => {
+      console.error('[api/chat-completions] Error al reenviar a Groq:', err);
+      res.status(500).json({ error: 'Error al procesar la solicitud.' });
     });
 });
 

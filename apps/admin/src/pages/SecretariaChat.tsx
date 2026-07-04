@@ -19,6 +19,8 @@ import { salesRecordsService } from '@/services/salesRecordsService';
 import { certificatesService } from '@/services/certificatesService';
 import { studentsService } from '@/services/studentsService';
 import { chatHistoryService } from '@/services/chatHistoryService';
+import { useAuthStore } from '@/store/authStore';
+import { useToast } from '@/hooks/useToast';
 
 // ─── Groq types ───────────────────────────────────────────────────────────────
 
@@ -54,7 +56,7 @@ interface Message {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY as string | undefined;
+const BOT_URL = (import.meta.env.VITE_BOT_URL as string | undefined) ?? 'http://localhost:3000';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 const timeFmt = new Intl.DateTimeFormat('es-PE', { hour: '2-digit', minute: '2-digit' });
@@ -184,25 +186,31 @@ const TOOLS = [
   },
 ];
 
-// ─── Groq API call ────────────────────────────────────────────────────────────
+// ─── Groq API call (vía proxy de apps/bot — la key nunca vive en el navegador) ─
 
-async function callGroq(messages: GroqMessage[]): Promise<GroqResponse> {
-  if (!GROQ_API_KEY) {
-    throw new Error(
-      'Clave de API no configurada. Agrega VITE_GROQ_API_KEY al archivo .env.local del panel admin.',
-    );
-  }
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+class RateLimitError extends Error {}
+
+async function callGroq(messages: GroqMessage[], userId?: string): Promise<GroqResponse> {
+  const res = await fetch(`${BOT_URL}/api/chat-completions`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({ model: GROQ_MODEL, messages, tools: TOOLS, tool_choice: 'auto', temperature: 0.3 }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages,
+      tools: TOOLS,
+      tool_choice: 'auto',
+      temperature: 0.3,
+      userId,
+    }),
   });
+
+  if (res.status === 429) {
+    const body = await res.json().catch(() => null);
+    throw new RateLimitError(body?.error ?? 'Estás enviando mensajes muy rápido, espera un momento.');
+  }
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`Error Groq API ${res.status}: ${txt.slice(0, 200)}`);
+    throw new Error(`Error del servidor (${res.status}): ${txt.slice(0, 200)}`);
   }
   return res.json() as Promise<GroqResponse>;
 }
@@ -469,6 +477,8 @@ export default function SecretariaChat() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [clearOpen,      setClearOpen]      = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuthStore();
+  const toast = useToast();
 
   // Persistent Groq conversation history (not display state — no re-render needed)
   const groqHistoryRef = useRef<GroqMessage[]>([
@@ -541,7 +551,7 @@ export default function SecretariaChat() {
       let continueLoop = true;
 
       while (continueLoop) {
-        const response = await callGroq(history);
+        const response = await callGroq(history, user?.id);
         const choice = response.choices[0];
         if (!choice) throw new Error('Respuesta inesperada de la API.');
 
@@ -579,20 +589,26 @@ export default function SecretariaChat() {
       }
     } catch (err) {
       history.pop();
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: `⚠️ ${err instanceof Error ? err.message : 'Error desconocido. Intenta de nuevo.'}`,
-          ts: new Date(),
-        },
-      ]);
+
+      if (err instanceof RateLimitError) {
+        toast.error('Estás enviando mensajes muy rápido', err.message);
+        setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `⚠️ ${err instanceof Error ? err.message : 'Error desconocido. Intenta de nuevo.'}`,
+            ts: new Date(),
+          },
+        ]);
+      }
     } finally {
       setLoading(false);
       setToolStatus(null);
     }
-  }, [input, loading]);
+  }, [input, loading, user, toast]);
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
