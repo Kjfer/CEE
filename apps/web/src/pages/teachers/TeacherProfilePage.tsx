@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Breadcrumb } from '@/components/shared/Breadcrumb';
 import { ROUTES } from '@/constants/routes';
 import { useTeacher } from '@/hooks/useTeacher';
-import { formatDateLong } from '@/lib/utils';
+import { CourseCard } from '@/components/shared/CourseCard';
 
 const LinkedInLogo = () => (
   <svg viewBox="0 0 24 24" className="h-6 w-6 fill-white" xmlns="http://www.w3.org/2000/svg">
@@ -70,29 +70,33 @@ export default function TeacherProfilePage() {
         </div>
       </div>
 
+      {teacher.specialties && teacher.specialties.length > 0 && (
+        <div className="mt-6 flex flex-wrap gap-2">
+          {teacher.specialties.map((spec, index) => (
+            <span
+              key={index}
+              className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground"
+            >
+              {spec}
+            </span>
+          ))}
+        </div>
+      )}
+
       <p className="mt-8 text-base leading-relaxed text-muted-foreground">{teacher.bio}</p>
 
       <div className="mt-10">
-        <h2 className="text-xl font-semibold">Próximos eventos y clases</h2>
-        {teacher.upcomingEvents.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">
-            Sin eventos próximos programados por el momento.
-          </p>
-        ) : (
-          <ul className="mt-4 grid gap-3">
-            {teacher.upcomingEvents.map((event) => (
-              <li
-                key={event.id}
-                className="flex items-start gap-3 rounded-lg border border-border bg-card p-4"
-              >
-                <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-cee-red" />
-                <div>
-                  <p className="font-medium">{event.title}</p>
-                  <p className="text-sm text-muted-foreground">{formatDateLong(event.date)}</p>
-                </div>
-              </li>
+        <h2 className="text-xl font-semibold">Cursos en los que participa</h2>
+        {teacher.activeCourses && teacher.activeCourses.length > 0 ? (
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            {teacher.activeCourses.map((course) => (
+              <CourseCard key={course.id} course={course} />
             ))}
-          </ul>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">
+            No tiene cursos activos por el momento.
+          </p>
         )}
       </div>
     </article>

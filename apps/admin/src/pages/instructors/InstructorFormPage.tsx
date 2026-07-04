@@ -14,6 +14,8 @@ const INITIAL_VALUES: InstructorFormInput = {
   title: '',
   bio: '',
   photoUrl: '',
+  linkedinUrl: '',
+  specialties: [],
 };
 
 type FormErrors = Partial<Record<keyof InstructorFormInput, string>>;
@@ -60,6 +62,8 @@ export default function InstructorFormPage() {
           title: res.data.title,
           bio: res.data.bio,
           photoUrl: res.data.photoUrl,
+          linkedinUrl: res.data.linkedinUrl || '',
+          specialties: res.data.specialties || [],
         });
         if (res.data.photoUrl) setPhotoPreview(res.data.photoUrl);
       })
@@ -192,6 +196,57 @@ export default function InstructorFormPage() {
             aria-invalid={Boolean(errors.bio)}
           />
           {errors.bio && <p className="text-sm text-destructive">{errors.bio}</p>}
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="linkedinUrl">Perfil de LinkedIn (Opcional)</Label>
+          <Input
+            id="linkedinUrl"
+            type="url"
+            value={values.linkedinUrl}
+            onChange={handleChange('linkedinUrl')}
+            placeholder="https://linkedin.com/in/usuario"
+            aria-invalid={Boolean(errors.linkedinUrl)}
+          />
+          {errors.linkedinUrl && <p className="text-sm text-destructive">{errors.linkedinUrl}</p>}
+        </div>
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="specialties">Especialidades (Tags)</Label>
+          <p className="text-xs text-muted-foreground mb-1">Escribe una especialidad y presiona Enter para agregarla.</p>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {values.specialties.map((spec, index) => (
+              <span key={index} className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full text-xs font-medium">
+                {spec}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newSpecs = [...values.specialties];
+                    newSpecs.splice(index, 1);
+                    setValues({ ...values, specialties: newSpecs });
+                  }}
+                  className="hover:text-destructive focus:outline-none"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <Input
+            id="specialties"
+            placeholder="Ej. Finanzas, Liderazgo..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const input = e.currentTarget;
+                const value = input.value.trim();
+                if (value && !values.specialties.includes(value)) {
+                  setValues({ ...values, specialties: [...values.specialties, value] });
+                  input.value = '';
+                }
+              }
+            }}
+          />
         </div>
 
         <div className="grid gap-1.5">

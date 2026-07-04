@@ -24,25 +24,19 @@ export interface Instructor {
   bio: string;
   photoUrl: string;
   linkedinUrl?: string;
+  specialties: string[];
 }
 
 // ---------- Profesores (menú "Profesores" del Navbar + perfil completo) ----------
 
-export interface TeacherUpcomingEvent {
-  id: string;
-  title: string;
-  date: string; // ISO date
-}
-
 /**
  * Superset de `Instructor` con los campos que necesita el perfil público del
- * docente (slug + próximos eventos/clases). Estructuralmente compatible con
+ * docente (slug + cursos activos). Estructuralmente compatible con
  * `Instructor`, por lo que se reutiliza `TeacherCard` (Detalle de curso) tal cual.
- * //TODO(backend): confirmar contrato — campos `slug`/`upcomingEvents` (O4, plan de mejoras).
  */
 export interface Teacher extends Instructor {
   slug: string;
-  upcomingEvents: TeacherUpcomingEvent[];
+  activeCourses: Course[];
 }
 
 // ---------- Sílabo ----------

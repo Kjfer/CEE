@@ -14,6 +14,8 @@ let mockInstructors: Instructor[] = [
     title: 'Ingeniero de Software Senior',
     bio: 'Especialista en desarrollo web y arquitectura de software.',
     photoUrl: 'https://i.pravatar.cc/150?u=juan',
+    linkedinUrl: 'https://linkedin.com/in/juanperez',
+    specialties: ['React', 'Node.js'],
   },
   {
     id: 'i-2',
@@ -21,6 +23,8 @@ let mockInstructors: Instructor[] = [
     title: 'Data Scientist',
     bio: 'Experta en análisis de datos y machine learning.',
     photoUrl: 'https://i.pravatar.cc/150?u=maria',
+    linkedinUrl: '',
+    specialties: ['Python', 'Machine Learning', 'Big Data'],
   },
 ];
 
@@ -29,6 +33,8 @@ export interface InstructorFormInput {
   title: string;
   bio: string;
   photoUrl: string;
+  linkedinUrl: string;
+  specialties: string[];
 }
 
 interface InstructorRow {
@@ -37,6 +43,8 @@ interface InstructorRow {
   title: string;
   bio: string;
   photo_url: string;
+  linkedin_url?: string;
+  specialties?: string[];
 }
 
 function formatInstructor(row: InstructorRow): Instructor {
@@ -46,6 +54,8 @@ function formatInstructor(row: InstructorRow): Instructor {
     title: row.title,
     bio: row.bio,
     photoUrl: row.photo_url,
+    linkedinUrl: row.linkedin_url,
+    specialties: row.specialties ?? [],
   };
 }
 
@@ -93,19 +103,25 @@ export const instructorsService = {
         title: input.title,
         bio: input.bio,
         photoUrl: input.photoUrl || 'https://i.pravatar.cc/150',
+        linkedinUrl: input.linkedinUrl,
+        specialties: input.specialties,
       };
       mockInstructors.push(newInstructor);
       return delay({ data: newInstructor });
     }
 
+    const payload = {
+      name: input.name,
+      title: input.title,
+      bio: input.bio,
+      photo_url: input.photoUrl,
+      linkedin_url: input.linkedinUrl || null,
+      specialties: input.specialties,
+    };
+
     const { data, error } = await supabase
       .from('instructors')
-      .insert({
-        name: input.name,
-        title: input.title,
-        bio: input.bio,
-        photo_url: input.photoUrl,
-      })
+      .insert(payload)
       .select('*')
       .single();
 
@@ -123,14 +139,18 @@ export const instructorsService = {
       return delay({ data: { ...mockInstructors[idx] } });
     }
 
+    const payload = {
+      name: input.name,
+      title: input.title,
+      bio: input.bio,
+      photo_url: input.photoUrl,
+      linkedin_url: input.linkedinUrl || null,
+      specialties: input.specialties,
+    };
+
     const { data, error } = await supabase
       .from('instructors')
-      .update({
-        name: input.name,
-        title: input.title,
-        bio: input.bio,
-        photo_url: input.photoUrl,
-      })
+      .update(payload)
       .eq('id', id)
       .select('*')
       .single();

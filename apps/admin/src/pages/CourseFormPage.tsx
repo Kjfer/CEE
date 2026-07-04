@@ -628,12 +628,12 @@ export default function CourseFormPage() {
                 </div>
               ) : (
                 <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/20">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="p-2 bg-background/80 rounded-md">
+                  <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+                    <div className="p-2 bg-background/80 rounded-md shrink-0">
                       <FileText className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="flex flex-col truncate">
-                      <span className="text-sm font-medium truncate">{syllabusFileName}</span>
+                    <div className="flex flex-col truncate min-w-0 flex-1">
+                      <span className="text-sm font-medium truncate" title={syllabusFileName}>{syllabusFileName}</span>
                     </div>
                   </div>
                   <button
