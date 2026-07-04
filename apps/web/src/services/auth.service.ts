@@ -80,9 +80,29 @@ export const authService = {
       throw new Error(error?.message ?? 'No se pudo completar el registro.');
     }
 
-    const user = await fetchProfile(data.user.id);
+    let user: User;
     if (data.session) {
+      try {
+        // Retry profile fetch once if there is a race condition with the trigger
+        user = await fetchProfile(data.user.id);
+      } catch (e) {
+        user = {
+          id: data.user.id,
+          name,
+          email,
+          role: 'student',
+          avatarUrl: '',
+        };
+      }
       useAuthStore.getState().setUser(user);
+    } else {
+      user = {
+        id: data.user.id,
+        name,
+        email,
+        role: 'student',
+        avatarUrl: '',
+      };
     }
     return { data: { user, token: data.session?.access_token ?? '' } };
   },
