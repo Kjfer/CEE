@@ -152,4 +152,26 @@ export const authService = {
       }
     });
   },
+
+  async resetPasswordForEmail(email: string): Promise<void> {
+    if (USE_MOCKS) {
+      return delay(undefined);
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  async updatePassword(password: string): Promise<void> {
+    if (USE_MOCKS) {
+      return delay(undefined);
+    }
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      throw new Error(error.message);
+    }
+  },
 };

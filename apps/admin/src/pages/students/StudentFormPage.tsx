@@ -1,13 +1,14 @@
-import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useState, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { StudentGender, StudentSource } from '@cee/types';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Upload, Download, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/useToast';
 import { studentsService, type StudentFormInput } from '@/services/studentsService';
+import { excelHelper } from '@/utils/excelHelper';
 
 interface FormValues {
   dni: string;
@@ -66,6 +67,10 @@ export default function StudentFormPage() {
   const [isLoading, setIsLoading] = useState(isEdit);
   const [isSubmitting, setSubmitting] = useState(false);
   const [moodleOpen, setMoodleOpen]   = useState(false);
+  
+  // Ref para input de archivo excel
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingExcel, setIsUploadingExcel] = useState(false);
 
   useEffect(() => {
     if (!isEdit || !id) return;
@@ -101,6 +106,53 @@ export default function StudentFormPage() {
   const set = (field: keyof FormValues) =>
     (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setValues((p) => ({ ...p, [field]: e.target.value }));
+
+  const handleExcelUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingExcel(true);
+    try {
+      const studentsData = await excelHelper.parseExcelFile(file);
+      
+      if (studentsData.length === 0) {
+        throw new Error('No se encontraron alumnos válidos en el archivo.');
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Iterar sobre todos los estudiantes extraídos y crearlos
+      for (const student of studentsData) {
+        try {
+          // El método de creación debe estar preparado para manejar "ON CONFLICT DO NOTHING" 
+          // a nivel de base de datos o si falla un constraint único (DNI).
+          // En caso de que falle, lo contamos como error pero seguimos procesando.
+          await studentsService.createStudent(student);
+          successCount++;
+        } catch (err) {
+          errorCount++;
+        }
+      }
+
+      success(
+        'Importación finalizada',
+        `${successCount} alumnos creados correctamente.${errorCount > 0 ? ` ${errorCount} no se pudieron guardar (posiblemente duplicados).` : ''}`
+      );
+      
+      if (successCount > 0) {
+        navigate('/alumnos');
+      }
+    } catch (err) {
+      error('Error al importar', err instanceof Error ? err.message : 'Verifica el formato del archivo.');
+    } finally {
+      setIsUploadingExcel(false);
+      // Limpiar el input file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -155,6 +207,48 @@ export default function StudentFormPage() {
         <h1 className="text-2xl font-bold text-gray-900">{isEdit ? 'Editar alumno' : 'Nuevo alumno'}</h1>
         <p className="mt-0.5 text-sm text-[#A9A9A9]">Completa los datos del alumno del CEE.</p>
       </div>
+
+      {!isEdit && (
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-emerald-100 bg-emerald-50/30 mb-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-emerald-900 flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                Registro Masivo (Importar Excel)
+              </h2>
+              <p className="text-sm text-emerald-700 mt-1">
+                ¿Tienes muchos alumnos? Descarga la plantilla, llénala y súbela aquí para registrarlos todos de una vez.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 min-w-[200px]">
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                onClick={excelHelper.downloadTemplate}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Descargar Plantilla
+              </Button>
+              <Button 
+                type="button"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white relative overflow-hidden"
+                disabled={isUploadingExcel}
+              >
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  accept=".xlsx, .xls"
+                  onChange={handleExcelUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+                <Upload className="w-4 h-4 mr-2" />
+                {isUploadingExcel ? 'Importando...' : 'Subir Excel Lleno'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form className="grid gap-8 w-full bg-white p-6 md:p-8 rounded-xl shadow-sm border" onSubmit={handleSubmit} noValidate>
 

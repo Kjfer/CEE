@@ -18,6 +18,8 @@ import {
   Users,
   Settings,
   Shield,
+  Video,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authService } from '@/services/auth.service';
@@ -30,6 +32,8 @@ const TOP_ITEMS = [
   { label: 'Cursos',     path: '/cursos',     icon: BookOpen },
   { label: 'Profesores', path: '/profesores', icon: Users },
   { label: 'Eventos',    path: '/eventos',    icon: CalendarDays },
+  { label: 'Multimedia', path: '/multimedia', icon: Video },
+  { label: 'Blog',       path: '/blog',       icon: FileText },
 ] as const;
 
 const VENTAS_CHILDREN = [

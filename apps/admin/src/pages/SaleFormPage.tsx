@@ -8,8 +8,10 @@ import { useCourses } from '@/hooks/useCourses';
 import { useToast } from '@/hooks/useToast';
 import { salesRecordsService, type SaleFormInput } from '@/services/salesRecordsService';
 import { studentsService } from '@/services/studentsService';
+import type { Student } from '@cee/types';
 
 interface FormValues {
+  userId: string;
   studentName: string;
   courseId: string;
   amount: string;
@@ -24,6 +26,7 @@ interface FormErrors {
 }
 
 const INITIAL: FormValues = {
+  userId: '',
   studentName: '',
   courseId: '',
   amount: '',
@@ -33,8 +36,8 @@ const INITIAL: FormValues = {
 
 function validate(v: FormValues): FormErrors {
   const e: FormErrors = {};
-  if (!v.studentName.trim()) {
-    e.studentName = 'El nombre del alumno es requerido.';
+  if (!v.studentName.trim() && !v.userId) {
+    e.studentName = 'El alumno es requerido.';
   }
   if (!v.courseId) {
     e.courseId = 'Selecciona un curso.';
@@ -52,20 +55,37 @@ export default function SaleFormPage() {
   const { success, error } = useToast();
   const { courses } = useCourses();
 
-  const [values, setValues]       = useState<FormValues>(INITIAL);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [values, setValues] = useState<FormValues>(INITIAL);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false);
 
-  // Pre-fill from ?student_id if present
+  // Derivar estudiantes filtrados
+  const filteredStudents = students.filter((s) => {
+    const q = studentSearch.toLowerCase().trim();
+    const fullName = `${s.firstName} ${s.lastNamePaterno} ${s.lastNameMaterno}`.toLowerCase();
+    return fullName.includes(q) || s.dni.includes(q) || (s.email || '').toLowerCase().includes(q);
+  });
+
+  // Load students and pre-fill from ?student_id if present
   useEffect(() => {
+    studentsService.getStudents().then(({ data }) => {
+      setStudents(data);
+    }).catch(() => {});
+
     const studentId = params.get('student_id');
     if (!studentId) return;
     studentsService.getStudentById(studentId).then(({ data: s }) => {
+      const fullName = `${s.firstName} ${s.lastNamePaterno} ${s.lastNameMaterno}`.trim();
       setValues((prev) => ({
         ...prev,
-        studentName: `${s.firstName} ${s.lastNamePaterno} ${s.lastNameMaterno}`.trim(),
+        userId: s.id,
+        studentName: fullName,
       }));
+      setStudentSearch(`${fullName} - ${s.dni}`);
     }).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const [errors, setErrors]       = useState<FormErrors>({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setSubmitting] = useState(false);
 
   const handleChange =
@@ -84,6 +104,7 @@ export default function SaleFormPage() {
     try {
       const selectedCourse = courses.find((c) => c.id === values.courseId);
       const input: SaleFormInput = {
+        userId: values.userId || undefined,
         studentName: values.studentName.trim(),
         courseId: values.courseId,
         courseName: selectedCourse?.title ?? values.courseId,
@@ -110,18 +131,65 @@ export default function SaleFormPage() {
 
       <form className="grid gap-5 w-full bg-white p-6 md:p-8 rounded-xl shadow-sm border" onSubmit={handleSubmit} noValidate>
         {/* Alumno */}
-        <div className="grid gap-1.5">
-          <Label htmlFor="studentName">Nombre del alumno</Label>
-          <Input
-            id="studentName"
-            placeholder="Ej. Ana Quispe Flores"
-            value={values.studentName}
-            onChange={handleChange('studentName')}
-            aria-invalid={Boolean(errors.studentName)}
-          />
+        {/* Alumno - Buscador dinámico */}
+        <div className="grid gap-1.5 relative">
+          <Label htmlFor="searchStudent">Alumno</Label>
+          <div className="relative">
+            <Input
+              id="searchStudent"
+              type="text"
+              placeholder="Escribe para buscar un alumno (nombre, DNI, correo)..."
+              value={studentSearch}
+              onChange={(e) => {
+                setStudentSearch(e.target.value);
+                setShowStudentDropdown(true);
+                // Si el usuario borra todo, quitamos el alumno seleccionado
+                if (!e.target.value.trim()) {
+                  setValues(prev => ({ ...prev, userId: '', studentName: '' }));
+                }
+              }}
+              onFocus={() => setShowStudentDropdown(true)}
+              onBlur={() => {
+                // Pequeño retraso para permitir que el click en la opción se registre
+                setTimeout(() => setShowStudentDropdown(false), 200);
+              }}
+              aria-invalid={Boolean(errors.studentName)}
+            />
+            {showStudentDropdown && studentSearch.trim() && (
+              <ul className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg py-1 text-sm">
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map((s) => (
+                    <li
+                      key={s.id}
+                      className="cursor-pointer px-3 py-2 hover:bg-gray-100 flex flex-col"
+                      onClick={() => {
+                        const fullName = `${s.firstName} ${s.lastNamePaterno} ${s.lastNameMaterno}`.trim();
+                        setValues(prev => ({
+                          ...prev,
+                          userId: s.id,
+                          studentName: fullName
+                        }));
+                        setStudentSearch(`${fullName} - ${s.dni}`);
+                        setShowStudentDropdown(false);
+                      }}
+                    >
+                      <span className="font-medium text-gray-900">{s.firstName} {s.lastNamePaterno} {s.lastNameMaterno}</span>
+                      <span className="text-xs text-gray-500">DNI: {s.dni} {s.email ? `• ${s.email}` : ''}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li className="px-3 py-2 text-gray-500">No se encontraron resultados.</li>
+                )}
+              </ul>
+            )}
+          </div>
           {errors.studentName && (
             <p className="text-sm text-destructive">{errors.studentName}</p>
           )}
+          
+          <div className="text-xs text-muted-foreground mt-1">
+            Si el alumno no está en la lista, <Link to="/alumnos/nuevo" className="text-[#682222] hover:underline">crea su perfil primero aquí</Link>.
+          </div>
         </div>
 
         {/* Curso */}

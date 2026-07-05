@@ -95,18 +95,12 @@ export default function LoginPage() {
               <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />
               Recordarme
             </label>
-            <button
-              type="button"
+            <Link
+              to="/forgot-password"
               className="text-sm font-medium text-cee-red hover:underline"
-              onClick={() =>
-                error(
-                  '¿Olvidaste tu contraseña?',
-                  'Comunícate con el CEE-FIIS para restablecer tu acceso.',
-                )
-              }
             >
               ¿Olvidó su contraseña?
-            </button>
+            </Link>
           </div>
 
           <Button type="submit" disabled={isSubmitting} className="w-full">

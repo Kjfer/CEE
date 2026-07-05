@@ -8,6 +8,7 @@ const delay = <T>(value: T, ms = 350): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), ms));
 
 export interface SaleFormInput {
+  userId?: string;
   studentName: string;
   courseId: string;
   courseName: string;
@@ -89,7 +90,7 @@ export const salesRecordsService = {
         id: `s-${Date.now()}`,
         courseId: input.courseId,
         courseName: input.courseName,
-        userId: '',
+        userId: input.userId ?? '',
         studentName: input.studentName,
         amount: input.amount,
         date: now,
@@ -106,6 +107,7 @@ export const salesRecordsService = {
       .insert({
         course_id: input.courseId,
         course_name: input.courseName,
+        user_id: input.userId ?? null,
         student_name: input.studentName,
         amount: input.amount,
         status: input.status,

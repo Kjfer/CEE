@@ -22,6 +22,10 @@ const CertificateFormPage = lazy(() => import('@/pages/CertificateFormPage'));
 const StudentsPage = lazy(() => import('@/pages/students/StudentsPage'));
 const StudentFormPage = lazy(() => import('@/pages/students/StudentFormPage'));
 const StudentDetailPage = lazy(() => import('@/pages/students/StudentDetailPage'));
+const MultimediaListPage = lazy(() => import('@/pages/multimedia/MultimediaListPage'));
+const MultimediaFormPage = lazy(() => import('@/pages/multimedia/MultimediaFormPage'));
+const BlogListPage = lazy(() => import('@/pages/blog/BlogListPage'));
+const BlogFormPage = lazy(() => import('@/pages/blog/BlogFormPage'));
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const AboutUsFormPage = lazy(() => import('@/pages/settings/AboutUsFormPage'));
@@ -71,6 +75,12 @@ export const router = createBrowserRouter([
           { path: '/alumnos/:id/editar', element: withSuspense(<StudentFormPage />) },
           { path: '/certificados', element: withSuspense(<CertificatesPage />) },
           { path: '/certificados/nuevo', element: withSuspense(<CertificateFormPage />) },
+          { path: '/multimedia', element: withSuspense(<MultimediaListPage />) },
+          { path: '/multimedia/nuevo', element: withSuspense(<MultimediaFormPage />) },
+          { path: '/multimedia/:id/editar', element: withSuspense(<MultimediaFormPage />) },
+          { path: '/blog', element: withSuspense(<BlogListPage />) },
+          { path: '/blog/nuevo', element: withSuspense(<BlogFormPage />) },
+          { path: '/blog/:id/editar', element: withSuspense(<BlogFormPage />) },
           { path: '/notificaciones', element: withSuspense(<NotificationsPage />) },
           { path: '/perfil', element: withSuspense(<ProfilePage />) },
           { path: '/asistente', element: withSuspense(<SecretariaChat />) },
