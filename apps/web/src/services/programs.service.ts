@@ -75,11 +75,13 @@ function formatProgram(row: ProgramRow): Program {
 function formatProgramWithModules(row: ProgramRow): ProgramWithModules {
   const program = formatProgram(row);
   const links = [...(row.program_courses ?? [])].sort((a, b) => a.sort_order - b.sort_order);
-  const modules = links.map(({ sort_order, courses }) => ({
-    sortOrder: sort_order,
-    romanLabel: toRoman(sort_order),
-    course: formatCourse(courses),
-  }));
+  const modules = links
+    .filter((link): link is { sort_order: number; courses: CourseRow } => link.courses != null)
+    .map(({ sort_order, courses }) => ({
+      sortOrder: sort_order,
+      romanLabel: toRoman(sort_order),
+      course: formatCourse(courses),
+    }));
   return { ...program, modules, moduleCount: modules.length };
 }
 
@@ -233,20 +235,14 @@ export const programsService = {
       return null;
     }
 
-    const { data: course } = await supabase
-      .from('courses')
-      .select('id')
-      .eq('slug', courseSlug)
-      .maybeSingle();
-    if (!course) return null;
-
-    const { data: link } = await supabase
+    const { data: link, error } = await supabase
       .from('program_courses')
-      .select('sort_order, programs(slug)')
-      .eq('course_id', course.id)
+      .select('sort_order, programs!inner(slug, status), courses!inner(slug)')
+      .eq('courses.slug', courseSlug)
+      .eq('programs.status', 'published')
       .maybeSingle();
 
-    if (!link?.programs) return null;
+    if (error || !link) return null;
     const programRef = link.programs as { slug: string } | { slug: string }[];
     const programSlug = Array.isArray(programRef) ? programRef[0]?.slug : programRef.slug;
     if (!programSlug) return null;
