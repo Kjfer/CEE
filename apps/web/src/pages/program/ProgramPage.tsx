@@ -18,6 +18,7 @@ import {
   LandingValueSummary,
   MobileStickyCta,
   ProgramInscriptionForm,
+  ProgramModuleExplorer,
   ProgramModulesAccordion,
   scrollToAnchor,
   scrollToInscription,
@@ -34,6 +35,11 @@ export default function ProgramPage({ program }: ProgramPageProps) {
   const [selectedSortOrder, setSelectedSortOrder] = useState(1);
   const [openModule, setOpenModule] = useState<string | undefined>('modulo-1');
 
+  const handleModuleSelect = (sortOrder: number) => {
+    setSelectedSortOrder(sortOrder);
+    setOpenModule(`modulo-${sortOrder}`);
+  };
+
   const asCourseStats = program as unknown as Course;
 
   useEffect(() => {
@@ -44,6 +50,10 @@ export default function ProgramPage({ program }: ProgramPageProps) {
         scrollToInscription();
       } else if (anchor.startsWith('modulo-')) {
         setOpenModule(anchor);
+        const sortOrder = Number.parseInt(anchor.replace('modulo-', ''), 10);
+        if (Number.isFinite(sortOrder) && sortOrder > 0) {
+          setSelectedSortOrder(sortOrder);
+        }
         scrollToAnchor(anchor);
       } else {
         scrollToAnchor(anchor);
@@ -147,6 +157,14 @@ export default function ProgramPage({ program }: ProgramPageProps) {
             </LandingSection>
 
             <LandingSection>
+              <ProgramModuleExplorer
+                modules={program.modules}
+                selectedSortOrder={selectedSortOrder}
+                onSelect={handleModuleSelect}
+              />
+            </LandingSection>
+
+            <LandingSection>
               <ProgramModulesAccordion
                 modules={program.modules}
                 openModule={openModule}
@@ -168,7 +186,6 @@ export default function ProgramPage({ program }: ProgramPageProps) {
               <ProgramInscriptionForm
                 program={program}
                 selectedSortOrder={selectedSortOrder}
-                onModuleSelect={setSelectedSortOrder}
                 source="program-sidebar"
               />
             </div>

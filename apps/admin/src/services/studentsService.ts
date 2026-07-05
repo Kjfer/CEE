@@ -73,6 +73,7 @@ interface StudentRow {
   source: StudentSource;
   notes: string | null;
   moodle_user_id: number | null;
+  profile_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -97,6 +98,7 @@ function rowToStudent(row: StudentRow): Student {
     source:          row.source,
     notes:           row.notes,
     moodleUserId:    row.moodle_user_id,
+    profileId:       row.profile_id,
     createdAt:       row.created_at,
     updatedAt:       row.updated_at,
   };

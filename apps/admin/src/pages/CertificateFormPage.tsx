@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,19 +6,23 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useCourses } from '@/hooks/useCourses';
 import { useToast } from '@/hooks/useToast';
-import { certificatesService, type CertificateFormInput } from '@/services/certificatesService';
+import { certificatesService } from '@/services/certificatesService';
 import { studentsService } from '@/services/studentsService';
+import type { Student } from '@cee/types';
 
 interface FormValues {
-  studentName: string;
+  studentId: string;
   courseId: string;
+  grade: string;
   issuedAt: string;
+  completedAt: string;
   notes: string;
 }
 
 interface FormErrors {
-  studentName?: string;
+  studentId?: string;
   courseId?: string;
+  grade?: string;
   issuedAt?: string;
 }
 
@@ -26,51 +30,56 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function studentFullName(s: Student): string {
+  return `${s.firstName} ${s.lastNamePaterno} ${s.lastNameMaterno}`.trim();
+}
+
 function validate(v: FormValues): FormErrors {
   const e: FormErrors = {};
-  if (!v.studentName.trim()) e.studentName = 'El nombre del alumno es requerido.';
-  if (!v.courseId)           e.courseId    = 'Selecciona un curso.';
-  if (!v.issuedAt)           e.issuedAt    = 'La fecha de emisión es requerida.';
+  if (!v.studentId) e.studentId = 'Selecciona un alumno.';
+  if (!v.courseId) e.courseId = 'Selecciona un curso.';
+  if (!v.grade.trim()) e.grade = 'Ingresa la nota.';
+  else if (Number.isNaN(Number(v.grade)) || Number(v.grade) < 0 || Number(v.grade) > 20) {
+    e.grade = 'La nota debe estar entre 0 y 20.';
+  }
+  if (!v.issuedAt) e.issuedAt = 'La fecha de emisión es requerida.';
   return e;
 }
 
 export default function CertificateFormPage() {
-  const navigate       = useNavigate();
-  const [params]       = useSearchParams();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
   const { success, error } = useToast();
-  const { courses }    = useCourses();
+  const { courses } = useCourses();
+  const [students, setStudents] = useState<Student[]>([]);
 
-  const preAlumno = params.get('alumno') ?? '';
-  const preCurso  = params.get('curso')  ?? '';
+  const preCurso = params.get('curso') ?? '';
+  const preStudentId = params.get('student_id') ?? '';
 
   const [values, setValues] = useState<FormValues>({
-    studentName: preAlumno,
-    courseId:    preCurso,
-    issuedAt:    todayISO(),
-    notes:       '',
+    studentId: preStudentId,
+    courseId: preCurso,
+    grade: '',
+    issuedAt: todayISO(),
+    completedAt: todayISO(),
+    notes: '',
   });
-  const [errors, setErrors]         = useState<FormErrors>({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setSubmitting] = useState(false);
 
-  // Pre-fill from ?student_id if present (overrides ?alumno)
   useEffect(() => {
-    const studentId = params.get('student_id');
-    if (!studentId) return;
-    studentsService.getStudentById(studentId).then(({ data: s }) => {
-      setValues((prev) => ({
-        ...prev,
-        studentName: `${s.firstName} ${s.lastNamePaterno} ${s.lastNameMaterno}`.trim(),
-      }));
-    }).catch(() => {});
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    studentsService.getStudents().then(({ data }) => setStudents(data)).catch(() => {});
+  }, []);
 
-  // If the pre-filled courseId isn't in the loaded courses yet, wait for them
-  // (no-op: the select will just show the right option once courses load)
-  useEffect(() => {
-    if (preCurso && !values.courseId) {
-      setValues((prev) => ({ ...prev, courseId: preCurso }));
-    }
-  }, [preCurso]); // eslint-disable-line react-hooks/exhaustive-deps
+  const selectedStudent = useMemo(
+    () => students.find((s) => s.id === values.studentId),
+    [students, values.studentId],
+  );
+
+  const selectedCourse = useMemo(
+    () => courses.find((c) => c.id === values.courseId),
+    [courses, values.courseId],
+  );
 
   const handleChange =
     (field: keyof FormValues) =>
@@ -83,22 +92,26 @@ export default function CertificateFormPage() {
     const ve = validate(values);
     setErrors(ve);
     if (Object.keys(ve).length > 0) return;
+    if (!selectedStudent || !selectedCourse) return;
 
     setSubmitting(true);
     try {
-      const selectedCourse = courses.find((c) => c.id === values.courseId);
-      const input: CertificateFormInput = {
-        studentName: values.studentName.trim(),
-        courseId:    values.courseId,
-        courseName:  selectedCourse?.title ?? values.courseId,
-        issuedAt:    values.issuedAt,
-        notes:       values.notes.trim() || null,
-      };
-      await certificatesService.createCertificate(input);
-      success('Certificado creado', 'El certificado se creó en estado Borrador.');
+      await certificatesService.issueCertificate({
+        studentId: selectedStudent.id,
+        studentName: studentFullName(selectedStudent),
+        profileId: selectedStudent.profileId ?? null,
+        courseId: selectedCourse.id,
+        courseName: selectedCourse.title,
+        academicHours: selectedCourse.academicHours,
+        grade: Number(values.grade),
+        issuedAt: values.issuedAt,
+        completedAt: values.completedAt || null,
+        notes: values.notes.trim() || null,
+      });
+      success('Certificado emitido', 'PDF generado y disponible para el estudiante.');
       navigate('/certificados');
     } catch (err) {
-      error('No se pudo crear', err instanceof Error ? err.message : 'Intenta nuevamente.');
+      error('No se pudo emitir', err instanceof Error ? err.message : 'Intenta nuevamente.');
     } finally {
       setSubmitting(false);
     }
@@ -107,37 +120,43 @@ export default function CertificateFormPage() {
   return (
     <section className="mx-auto max-w-3xl grid gap-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">Emitir certificado</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Emitir certificado digital</h1>
         <p className="mt-0.5 text-sm text-[#A9A9A9]">
-          Se creará en estado <span className="font-medium text-gray-700">Borrador</span> — luego cambia el estado para firmarlo.
+          Genera el PDF con la plantilla CEE y publícalo para el estudiante.
         </p>
       </div>
 
       <form className="grid gap-5 w-full bg-white p-6 md:p-8 rounded-xl shadow-sm border" onSubmit={handleSubmit} noValidate>
-        {/* Alumno */}
         <div className="grid gap-1.5">
-          <Label htmlFor="studentName">Nombre del alumno</Label>
-          <Input
-            id="studentName"
-            placeholder="Ej. Ana Quispe Flores"
-            value={values.studentName}
-            onChange={handleChange('studentName')}
-            aria-invalid={Boolean(errors.studentName)}
-          />
-          {errors.studentName && (
-            <p className="text-sm text-destructive">{errors.studentName}</p>
+          <Label htmlFor="studentId">Alumno</Label>
+          <select
+            id="studentId"
+            value={values.studentId}
+            onChange={handleChange('studentId')}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="">Selecciona un alumno...</option>
+            {students.map((s) => (
+              <option key={s.id} value={s.id}>
+                {studentFullName(s)} — DNI {s.dni}
+              </option>
+            ))}
+          </select>
+          {errors.studentId && <p className="text-sm text-destructive">{errors.studentId}</p>}
+          {selectedStudent && !selectedStudent.profileId && (
+            <p className="text-xs text-amber-700">
+              Este alumno no tiene cuenta web vinculada; no podrá verlo en /perfil hasta asociar un profile_id.
+            </p>
           )}
         </div>
 
-        {/* Curso */}
         <div className="grid gap-1.5">
           <Label htmlFor="courseId">Curso</Label>
           <select
             id="courseId"
             value={values.courseId}
             onChange={handleChange('courseId')}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm focus:border-[#682222] focus:outline-none focus:ring-1 focus:ring-[#682222]/40"
-            aria-invalid={Boolean(errors.courseId)}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="">Selecciona un curso...</option>
             {courses.map((c) => (
@@ -146,47 +165,47 @@ export default function CertificateFormPage() {
               </option>
             ))}
           </select>
-          {errors.courseId && (
-            <p className="text-sm text-destructive">{errors.courseId}</p>
+          {errors.courseId && <p className="text-sm text-destructive">{errors.courseId}</p>}
+          {selectedCourse && (
+            <p className="text-xs text-muted-foreground">{selectedCourse.academicHours} horas académicas</p>
           )}
         </div>
 
-        {/* Fecha de emisión */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-1.5">
+            <Label htmlFor="grade">Nota (/20)</Label>
+            <Input
+              id="grade"
+              type="number"
+              min={0}
+              max={20}
+              step={0.5}
+              placeholder="Ej. 17.5"
+              value={values.grade}
+              onChange={handleChange('grade')}
+            />
+            {errors.grade && <p className="text-sm text-destructive">{errors.grade}</p>}
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="completedAt">Fecha de finalización</Label>
+            <Input id="completedAt" type="date" value={values.completedAt} onChange={handleChange('completedAt')} />
+          </div>
+        </div>
+
         <div className="grid gap-1.5">
           <Label htmlFor="issuedAt">Fecha de emisión</Label>
-          <Input
-            id="issuedAt"
-            type="date"
-            value={values.issuedAt}
-            max={todayISO()}
-            onChange={handleChange('issuedAt')}
-            aria-invalid={Boolean(errors.issuedAt)}
-          />
-          {errors.issuedAt && (
-            <p className="text-sm text-destructive">{errors.issuedAt}</p>
-          )}
+          <Input id="issuedAt" type="date" value={values.issuedAt} max={todayISO()} onChange={handleChange('issuedAt')} />
+          {errors.issuedAt && <p className="text-sm text-destructive">{errors.issuedAt}</p>}
         </div>
 
-        {/* Notas */}
         <div className="grid gap-1.5">
           <Label htmlFor="notes">Notas (opcional)</Label>
-          <Textarea
-            id="notes"
-            placeholder="Observaciones, mención especial, etc."
-            value={values.notes}
-            onChange={handleChange('notes')}
-            rows={3}
-          />
+          <Textarea id="notes" value={values.notes} onChange={handleChange('notes')} rows={3} />
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-[#682222] text-white hover:bg-[#4F1A1A]"
-          >
-            {isSubmitting ? 'Creando...' : 'Crear certificado'}
+          <Button type="submit" disabled={isSubmitting} className="bg-[#682222] text-white hover:bg-[#4F1A1A]">
+            {isSubmitting ? 'Generando PDF...' : 'Generar y emitir certificado'}
           </Button>
           <Button asChild type="button" variant="outline">
             <Link to="/certificados">Cancelar</Link>

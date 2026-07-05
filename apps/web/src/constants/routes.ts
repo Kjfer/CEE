@@ -17,4 +17,5 @@ export const ROUTES = {
   PRIVACY: '/privacidad',
   TERMS: '/terminos',
   COOKIES: '/cookies',
+  CERTIFICATE_VERIFY: '/certificados/verificar/:code',
 } as const;

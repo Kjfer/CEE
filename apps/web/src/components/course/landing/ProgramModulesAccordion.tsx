@@ -5,7 +5,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { formatModuleTitle } from '@/lib/roman';
+import { moduleLabel } from '@/lib/roman';
 import { SectionHeading } from './SectionHeading';
 import { CourseModuleDetail } from './CourseModuleDetail';
 
@@ -41,12 +41,13 @@ export function ProgramModulesAccordion({
       >
         {modules.map((mod) => {
           const itemId = `modulo-${mod.sortOrder}`;
-          const displayTitle = formatModuleTitle(mod.course.title, mod.sortOrder);
           return (
             <AccordionItem key={mod.course.id} value={itemId} id={itemId} className="scroll-mt-24">
               <AccordionTrigger className="text-left text-sm font-semibold hover:no-underline sm:text-base">
                 <span>
-                  {displayTitle}
+                  <span className="text-cee-red">{moduleLabel(mod.sortOrder)}</span>
+                  <span className="mx-1.5 text-muted-foreground">·</span>
+                  {mod.course.title}
                   <span className="ml-2 text-xs font-normal text-muted-foreground">
                     ({mod.course.academicHours} h)
                   </span>
