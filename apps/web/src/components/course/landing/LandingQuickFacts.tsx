@@ -1,18 +1,18 @@
-import type { Course } from '@cee/types';
+import type { Course, Program } from '@cee/types';
 import { CalendarDays, Clock, GraduationCap, Laptop } from 'lucide-react';
 import { formatDateLong } from '@/lib/utils';
 
 interface LandingQuickFactsProps {
-  course: Course;
+  product: Course | Program;
 }
 
-/** "Ficha técnica" del programa (nivel, duración, modalidad, inicio) — datos del curso. */
-export function LandingQuickFacts({ course }: LandingQuickFactsProps) {
+/** Ficha técnica (nivel, duración, modalidad, inicio) — curso o programa. */
+export function LandingQuickFacts({ product }: LandingQuickFactsProps) {
   const facts = [
-    { icon: GraduationCap, label: 'Nivel', value: course.level },
-    { icon: Clock, label: 'Duración', value: `${course.academicHours} horas académicas` },
-    { icon: Laptop, label: 'Modalidad', value: course.modality },
-    { icon: CalendarDays, label: 'Inicio', value: formatDateLong(course.startDate) },
+    { icon: GraduationCap, label: 'Nivel', value: product.level },
+    { icon: Clock, label: 'Duración', value: `${product.academicHours} horas académicas` },
+    { icon: Laptop, label: 'Modalidad', value: product.modality },
+    { icon: CalendarDays, label: 'Inicio', value: formatDateLong(product.startDate) },
   ];
 
   return (
