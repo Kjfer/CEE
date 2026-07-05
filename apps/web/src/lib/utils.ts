@@ -15,9 +15,15 @@ const longDateFormatter = new Intl.DateTimeFormat('es-PE', {
   year: 'numeric',
 });
 
-/** Formato de fecha larga en mayúsculas, ej. "11 DE MAYO DE 2026" (locale es-PE). */
 export function formatDateLong(date: string | Date) {
-  const value = typeof date === 'string' ? new Date(`${date}T00:00:00`) : date;
+  if (!date) return '';
+  let value: Date;
+  if (typeof date === 'string') {
+    value = date.includes('T') ? new Date(date) : new Date(`${date}T00:00:00`);
+  } else {
+    value = date;
+  }
+  if (isNaN(value.getTime())) return 'Fecha inválida';
   return longDateFormatter.format(value).toUpperCase();
 }
 
