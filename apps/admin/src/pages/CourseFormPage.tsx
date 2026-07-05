@@ -600,7 +600,7 @@ export default function CourseFormPage() {
             </div>
 
             <div className="grid gap-1.5 min-w-0">
-              <Label htmlFor="syllabus">Sílabo (PDF)</Label>
+              <Label htmlFor="syllabus">Brochure (PDF)</Label>
               {!syllabusFileName ? (
                 <div className="relative group cursor-pointer">
                   <input

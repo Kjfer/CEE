@@ -233,8 +233,8 @@ export default function CourseDetailPage() {
         </Section>
       )}
 
-      {/* ── Sílabo (PDF) ── */}
-      <Section title="Sílabo (PDF)">
+      {/* ── Brochure (PDF) ── */}
+      <Section title="Brochure (PDF)">
         {course.syllabusPdfUrl ? (
           <div className="grid gap-3">
             <div className="flex items-center gap-3">
@@ -255,7 +255,7 @@ export default function CourseDetailPage() {
                 src={course.syllabusPdfUrl}
                 type="application/pdf"
                 className="h-[600px] w-full"
-                title={`Sílabo: ${course.title}`}
+                title={`Brochure: ${course.title}`}
               />
               {/* Fallback for browsers that don't support embed */}
               <noscript>
@@ -271,9 +271,9 @@ export default function CourseDetailPage() {
         ) : (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <FileText className="h-10 w-10 text-gray-300" />
-            <p className="text-sm text-gray-500">No se ha subido el sílabo aún.</p>
-            <Button asChild variant="outline" size="sm" className="border-gray-200 hover:border-[#682222] hover:text-[#682222]">
-              <Link to={`/cursos/${course.id}/editar`}>Subir sílabo</Link>
+            <p className="text-sm text-gray-500">No se ha subido el brochure aún.</p>
+            <Button asChild size="sm" variant="outline" className="mt-2 w-max text-[#682222]">
+              <Link to={`/cursos/${course.id}/editar`}>Subir brochure</Link>
             </Button>
           </div>
         )}

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { ArrowRight, Users } from 'lucide-react';
+import { ArrowRight, Users, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { CourseRatingStars } from '@/components/course/CourseRatingStars';
@@ -113,6 +113,17 @@ export default function CoursePage() {
             Inscribirme ahora
             <ArrowRight className="h-4 w-4" />
           </button>
+          {course.syllabusPdfUrl && (
+            <a
+              href={course.syllabusPdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-white/40 bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/20"
+            >
+              Descargar brochure
+              <Download className="h-4 w-4" />
+            </a>
+          )}
           <div className="flex items-baseline gap-2 text-white">
             <span className="text-xl font-extrabold">{formatPrice(course.price)}</span>
             {course.originalPrice && (
