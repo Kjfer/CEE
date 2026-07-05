@@ -113,6 +113,54 @@ export interface Course {
   createdAt: string;
 }
 
+// ---------- Programa (contenedor de cursos/módulos) ----------
+
+/** Programa publicado en catálogo; comparte campos de landing con Course. */
+export interface Program {
+  id: string;
+  slug: string;
+  title: string;
+  category: CourseCategory;
+  modality: CourseModality;
+  level: CourseLevel;
+  shortDescription: string;
+  description: string;
+  price: number;
+  originalPrice: number | null;
+  imageUrl: string;
+  startDate: string;
+  academicHours: number;
+  certification: string;
+  rating: number;
+  enrolledCount: number;
+  durationWeeks?: number | null;
+  scheduleDescription?: string | null;
+  syllabusPdfUrl: string;
+  status: CourseStatus;
+  graduateProfile: string[];
+  syllabus: SyllabusModule[];
+  benefits: string[];
+  updatedAt: string;
+  createdAt: string;
+}
+
+/** Curso dentro de un programa con orden y etiqueta romana calculada en UI. */
+export interface ProgramModule {
+  sortOrder: number;
+  romanLabel: string;
+  course: Course;
+}
+
+export interface ProgramWithModules extends Program {
+  modules: ProgramModule[];
+  moduleCount: number;
+}
+
+/** Ítem unificado del catálogo (curso independiente o programa). */
+export type CatalogItem =
+  | { kind: 'course'; course: Course }
+  | { kind: 'program'; program: Program; moduleCount: number };
+
 // ---------- Usuario ----------
 
 export interface User {

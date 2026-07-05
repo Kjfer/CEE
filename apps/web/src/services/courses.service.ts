@@ -1,90 +1,35 @@
-import type { ApiResponse, Course, Instructor, Paginated } from '@cee/types';
+import type { ApiResponse, Course, Paginated } from '@cee/types';
 import { API_ENDPOINTS } from '@/constants/api.constants';
 import { mockCourses } from '@/mocks';
+import { mockProgramModulesByProgramId } from '@/mocks/data/programs.mock';
 import { supabase } from '@/lib/supabase';
 import { api } from '@/services/api';
+import {
+  COURSE_SELECT,
+  formatCourse,
+  type CourseRow,
+} from '@/services/course-mapper';
+import { programsService } from '@/services/programs.service';
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
 const delay = <T>(value: T, ms = 400): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), ms));
 
-interface InstructorRow {
-  id: string;
-  name: string;
-  title: string;
-  bio: string;
-  photo_url: string;
+function getMockModuleCourseIds(): string[] {
+  return mockProgramModulesByProgramId.flatMap((m) => m.courseIds);
 }
-
-interface CourseRow {
-  id: string;
-  slug: string;
-  title: string;
-  category: Course['category'];
-  modality: Course['modality'];
-  level: Course['level'];
-  short_description: string;
-  description: string;
-  price: number;
-  original_price: number | null;
-  image_url: string;
-  start_date: string;
-  academic_hours: number;
-  certification: string;
-  rating: number;
-  enrolled_count: number;
-  moodle_course_id: number | null;
-  syllabus_pdf_url: string | null;
-  status: Course['status'];
-  graduate_profile: string[];
-  benefits: string[];
-  syllabus: Course['syllabus'];
-  created_at: string;
-  updated_at: string;
-  course_instructors?: { instructors: InstructorRow }[];
-}
-
-function formatInstructor(row: InstructorRow): Instructor {
-  return { id: row.id, name: row.name, title: row.title, bio: row.bio, photoUrl: row.photo_url };
-}
-
-function formatCourse(row: CourseRow): Course {
-  return {
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    category: row.category,
-    modality: row.modality,
-    level: row.level,
-    shortDescription: row.short_description,
-    description: row.description,
-    price: Number(row.price),
-    originalPrice: row.original_price != null ? Number(row.original_price) : null,
-    imageUrl: row.image_url,
-    startDate: row.start_date,
-    academicHours: row.academic_hours,
-    certification: row.certification,
-    rating: Number(row.rating),
-    enrolledCount: row.enrolled_count,
-    moodleCourseId: row.moodle_course_id,
-    syllabusPdfUrl: row.syllabus_pdf_url ?? '',
-    status: row.status,
-    graduateProfile: row.graduate_profile ?? [],
-    benefits: row.benefits ?? [],
-    syllabus: row.syllabus ?? [],
-    instructors: (row.course_instructors ?? []).map((ci) => formatInstructor(ci.instructors)),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-const COURSE_SELECT = '*, course_instructors(instructors(*))';
 
 export const coursesService = {
   async getAll(params?: Record<string, string | number | boolean>): Promise<Paginated<Course>> {
+    const standaloneOnly = params?.standaloneOnly === true || params?.standaloneOnly === 'true';
+
     if (USE_MOCKS) {
       let results = [...mockCourses];
+      if (standaloneOnly) {
+        const moduleIds = new Set(getMockModuleCourseIds());
+        results = results.filter((c) => !moduleIds.has(c.id));
+      }
       if (params?.category) {
         results = results.filter((c) => c.category === params.category);
       }
@@ -118,6 +63,13 @@ export const coursesService = {
       .from('courses')
       .select(COURSE_SELECT, { count: 'exact' })
       .eq('status', 'published');
+
+    if (standaloneOnly) {
+      const moduleIds = await programsService.getModuleCourseIds();
+      if (moduleIds.length > 0) {
+        query = query.not('id', 'in', `(${moduleIds.join(',')})`);
+      }
+    }
 
     if (params?.category) query = query.eq('category', String(params.category));
     if (params?.modality) query = query.eq('modality', String(params.modality));
@@ -178,8 +130,6 @@ export const coursesService = {
     return { data: formatCourse(data as unknown as CourseRow) };
   },
 
-  // Gestión (crear/editar/borrar) vive en apps/admin; aquí se mantiene el
-  // cliente legacy por si en el futuro hace falta un endpoint propio de web.
   async create(data: Omit<Course, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Course>> {
     if (USE_MOCKS) {
       const now = new Date().toISOString();
