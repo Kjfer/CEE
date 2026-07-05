@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import type { Course, CourseCategory, CourseModality } from '@cee/types';
+import type { CatalogItem, CourseCategory, CourseModality } from '@cee/types';
+import { CatalogTabs } from '@/components/catalog/CatalogTabs';
+import { ProgramCard } from '@/components/catalog/ProgramCard';
 import { FilterSidebar } from '@/components/catalog/FilterSidebar';
 import type { FilterState } from '@/components/catalog/FilterSidebar';
 import { PaginationControls } from '@/components/catalog/PaginationControls';
@@ -14,7 +16,9 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ROUTES } from '@/constants/routes';
+import type { CatalogKindFilter } from '@/hooks/useCatalog';
 import { coursesService } from '@/services/courses.service';
+import { programsService } from '@/services/programs.service';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -38,29 +42,52 @@ const EMPTY_FILTERS: FilterState = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function applySort(courses: Course[], sortBy: SortOption): Course[] {
-  const copy = [...courses];
+function itemPrice(item: CatalogItem): number {
+  return item.kind === 'course' ? item.course.price : item.program.price;
+}
+
+function itemCreatedAt(item: CatalogItem): string {
+  return item.kind === 'course' ? item.course.createdAt : item.program.createdAt;
+}
+
+function itemCategory(item: CatalogItem): CourseCategory {
+  return item.kind === 'course' ? item.course.category : item.program.category;
+}
+
+function itemModality(item: CatalogItem): CourseModality {
+  return item.kind === 'course' ? item.course.modality : item.program.modality;
+}
+
+function itemSearchText(item: CatalogItem): string {
+  if (item.kind === 'course') {
+    return `${item.course.title} ${item.course.shortDescription}`.toLowerCase();
+  }
+  return `${item.program.title} ${item.program.shortDescription}`.toLowerCase();
+}
+
+function applySortItems(items: CatalogItem[], sortBy: SortOption): CatalogItem[] {
+  const copy = [...items];
   switch (sortBy) {
     case 'price-asc':
-      return copy.sort((a, b) => a.price - b.price);
+      return copy.sort((a, b) => itemPrice(a) - itemPrice(b));
     case 'price-desc':
-      return copy.sort((a, b) => b.price - a.price);
+      return copy.sort((a, b) => itemPrice(b) - itemPrice(a));
     case 'newest':
       return copy.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        (a, b) => new Date(itemCreatedAt(b)).getTime() - new Date(itemCreatedAt(a)).getTime(),
       );
     default:
-      return copy; // relevance = orden original del mock
+      return copy;
   }
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export default function CatalogPage() {
-  // Estado base
-  const [allCourses, setAllCourses] = useState<Course[]>([]);
+  const [allItems, setAllItems] = useState<CatalogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [catalogKind, setCatalogKind] = useState<CatalogKindFilter>('all');
 
   // Controles de UI
   const [search, setSearch] = useState('');
@@ -77,13 +104,30 @@ export default function CatalogPage() {
     let isMounted = true;
     setIsLoading(true);
 
-    coursesService
-      .getAll({ pageSize: 100 }) // traemos todo, filtramos/paginamos client-side
-      .then((res) => {
-        if (isMounted) {
-          // Solo mostramos cursos publicados en el catálogo público
-          setAllCourses(res.data.filter((c) => c.status === 'published'));
-        }
+    Promise.all([
+      programsService.getAll({ pageSize: 100 }),
+      coursesService.getAll({ standaloneOnly: true, pageSize: 100 }),
+    ])
+      .then(async ([programsRes, coursesRes]) => {
+        if (!isMounted) return;
+        const counts = await programsService.getModuleCountsByProgramId(
+          programsRes.data.map((p) => p.id),
+        );
+        const items: CatalogItem[] = [
+          ...programsRes.data
+            .filter((p) => p.status === 'published')
+            .map(
+              (program): CatalogItem => ({
+                kind: 'program',
+                program,
+                moduleCount: counts.get(program.id) ?? 0,
+              }),
+            ),
+          ...coursesRes.data
+            .filter((c) => c.status === 'published')
+            .map((course): CatalogItem => ({ kind: 'course', course })),
+        ];
+        setAllItems(items);
       })
       .catch(() => {
         if (isMounted) setError('No se pudo cargar el catálogo. Intenta de nuevo.');
@@ -99,36 +143,34 @@ export default function CatalogPage() {
 
   // ── Filtrado + ordenamiento (client-side) ──────────────────────────────────
   const filtered = useMemo(() => {
-    let results = [...allCourses];
+    let results = [...allItems];
 
-    // Búsqueda por texto
+    if (catalogKind === 'course') {
+      results = results.filter((i) => i.kind === 'course');
+    } else if (catalogKind === 'program') {
+      results = results.filter((i) => i.kind === 'program');
+    }
+
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      results = results.filter(
-        (c) =>
-          c.title.toLowerCase().includes(q) ||
-          c.shortDescription.toLowerCase().includes(q),
-      );
+      results = results.filter((i) => itemSearchText(i).includes(q));
     }
 
-    // Categoría
     if (activeFilters.categories.length > 0) {
-      results = results.filter((c) => activeFilters.categories.includes(c.category));
+      results = results.filter((i) => activeFilters.categories.includes(itemCategory(i)));
     }
 
-    // Modalidad
     if (activeFilters.modalities.length > 0) {
-      results = results.filter((c) => activeFilters.modalities.includes(c.modality));
+      results = results.filter((i) => activeFilters.modalities.includes(itemModality(i)));
     }
 
-    // Rango de precio
     const min = activeFilters.priceMin !== '' ? Number(activeFilters.priceMin) : null;
     const max = activeFilters.priceMax !== '' ? Number(activeFilters.priceMax) : null;
-    if (min !== null) results = results.filter((c) => c.price >= min);
-    if (max !== null) results = results.filter((c) => c.price <= max);
+    if (min !== null) results = results.filter((i) => itemPrice(i) >= min);
+    if (max !== null) results = results.filter((i) => itemPrice(i) <= max);
 
-    return applySort(results, sortBy);
-  }, [allCourses, search, activeFilters, sortBy]);
+    return applySortItems(results, sortBy);
+  }, [allItems, catalogKind, search, activeFilters, sortBy]);
 
   // ── Paginación ─────────────────────────────────────────────────────────────
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -255,6 +297,10 @@ export default function CatalogPage() {
           </div>
         </div>
 
+        <div className="mb-6">
+          <CatalogTabs value={catalogKind} onChange={(v) => { setCatalogKind(v); setPage(1); }} />
+        </div>
+
         {/* Layout principal: sidebar desktop + grid */}
         <div className="flex gap-8">
           {/* Sidebar (solo desktop) */}
@@ -289,9 +335,17 @@ export default function CatalogPage() {
                   resultado{filtered.length !== 1 ? 's' : ''}
                 </p>
                 <div className="mb-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                  {paginated.map((course) => (
-                    <CourseCard key={course.id} course={course} />
-                  ))}
+                  {paginated.map((item) =>
+                    item.kind === 'program' ? (
+                      <ProgramCard
+                        key={item.program.id}
+                        program={item.program}
+                        moduleCount={item.moduleCount}
+                      />
+                    ) : (
+                      <CourseCard key={item.course.id} course={item.course} />
+                    ),
+                  )}
                 </div>
                 <PaginationControls
                   currentPage={safePage}

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { CourseCategory } from '@cee/types';
+import type { CatalogItem, CourseCategory } from '@cee/types';
+import { ProgramCard } from '@/components/catalog/ProgramCard';
 import { CourseCard } from '@/components/shared/CourseCard';
 import { CourseCardSkeleton } from '@/components/shared/CourseCardSkeleton';
 import { CourseFilter } from '@/components/shared/CourseFilter';
@@ -15,17 +16,35 @@ import { NextStartBadge } from '@/components/shared/NextStartBadge';
 import { WhyChooseUsSection } from '@/components/home/WhyChooseUsSection';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
-import { useCourses } from '@/hooks/useCourses';
+import { useCatalog } from '@/hooks/useCatalog';
 import { useEvents } from '@/hooks/useEvents';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 
-function getFeaturedCourse<T extends { status: string; startDate: string }>(
-  courses: T[],
-): T | undefined {
-  return [...courses]
-    .filter((course) => course.status === 'published')
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0];
+function getFeaturedItem(items: CatalogItem[]): CatalogItem | undefined {
+  const published = items.filter((item) => {
+    const status = item.kind === 'course' ? item.course.status : item.program.status;
+    const startDate = item.kind === 'course' ? item.course.startDate : item.program.startDate;
+    return status === 'published' && startDate;
+  });
+
+  return [...published].sort((a, b) => {
+    const dateA = a.kind === 'course' ? a.course.startDate! : a.program.startDate!;
+    const dateB = b.kind === 'course' ? b.course.startDate! : b.program.startDate!;
+    return new Date(dateA).getTime() - new Date(dateB).getTime();
+  })[0];
+}
+
+function toNextStartBadgeProps(item: CatalogItem | undefined) {
+  if (!item) return undefined;
+  if (item.kind === 'course') {
+    return { title: item.course.title, startDate: item.course.startDate, status: item.course.status };
+  }
+  return {
+    title: item.program.title,
+    startDate: item.program.startDate,
+    status: item.program.status,
+  };
 }
 
 const FEATURED_COUNT = 6;
@@ -43,14 +62,18 @@ const SECTION_ANCHORS = [
 export default function HomePage() {
   const [category, setCategory] = useState<CourseCategory | 'Todas'>('Todas');
   const [heroImageIndex, setHeroImageIndex] = useState(0);
-  const { courses, isLoading } = useCourses({ category });
+  const { items, isLoading } = useCatalog({ category });
   const { events, isLoading: eventsLoading } = useEvents();
   const { settings } = useSiteSettings();
   const heroImages = settings?.heroImages?.length 
     ? settings.heroImages 
     : ['https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=75'];
     
-  const featuredCourse = getFeaturedCourse(courses);
+  const publishedItems = items.filter((item) =>
+    item.kind === 'course' ? item.course.status === 'published' : item.program.status === 'published',
+  );
+  const featuredItem = getFeaturedItem(publishedItems);
+  const featuredForBadge = toNextStartBadgeProps(featuredItem);
   const heroRef = useRef<HTMLDivElement>(null);
   const eventosSectionRef = useScrollReveal<HTMLDivElement>({ selector: ':scope > *' });
   const programasHeaderRef = useScrollReveal<HTMLDivElement>();
@@ -145,7 +168,7 @@ export default function HomePage() {
               Programas ejecutivos de la FIIS-UNI diseñados para impulsar tu carrera profesional.
             </p>
 
-            <NextStartBadge course={featuredCourse} isLoading={isLoading} className="mt-5" />
+            <NextStartBadge course={featuredForBadge} isLoading={isLoading} className="mt-5" />
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Button asChild size="lg" className="bg-white text-cee-red shadow-lg shadow-cee-ink/20 transition-transform hover:scale-[1.03] hover:bg-white/90">
@@ -257,15 +280,23 @@ export default function HomePage() {
               <CourseCardSkeleton key={i} />
             ))}
           </div>
-        ) : courses.length === 0 ? (
+        ) : publishedItems.length === 0 ? (
           <p className="mt-10 text-center text-muted-foreground">
-            No hay cursos disponibles en esta categoría.
+            No hay programas disponibles en esta categoría.
           </p>
         ) : (
           <div ref={coursesGridRef} className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {courses.slice(0, FEATURED_COUNT).map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
+            {publishedItems.slice(0, FEATURED_COUNT).map((item) =>
+              item.kind === 'program' ? (
+                <ProgramCard
+                  key={item.program.id}
+                  program={item.program}
+                  moduleCount={item.moduleCount}
+                />
+              ) : (
+                <CourseCard key={item.course.id} course={item.course} />
+              ),
+            )}
           </div>
         )}
 

@@ -12,4 +12,7 @@ export { LandingFaq } from './LandingFaq';
 export { LandingCtaBanner } from './LandingCtaBanner';
 export { InscriptionForm } from './InscriptionForm';
 export { MobileStickyCta } from './MobileStickyCta';
+export { ProgramModulesAccordion } from './ProgramModulesAccordion';
+export { ProgramInscriptionForm } from './ProgramInscriptionForm';
+export { CourseModuleDetail } from './CourseModuleDetail';
 export { INSCRIPTION_ANCHOR_ID, scrollToInscription, scrollToAnchor } from './landing-utils';
