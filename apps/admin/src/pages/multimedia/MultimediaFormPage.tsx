@@ -27,6 +27,12 @@ function validate(values: VideoFormInput, hasFile: boolean): FormErrors {
   return errors;
 }
 
+function extractYouTubeId(url: string) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
+
 export default function MultimediaFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
@@ -67,7 +73,20 @@ export default function MultimediaFormPage() {
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const value = field === 'duration' ? Number(e.target.value) : e.target.value;
-    setValues((prev) => ({ ...prev, [field]: value }));
+    
+    setValues((prev) => {
+      const next = { ...prev, [field]: value };
+      
+      // Auto-completar miniatura de YouTube si se pega un enlace
+      if (field === 'videoUrl' && typeof value === 'string') {
+        const ytId = extractYouTubeId(value);
+        if (ytId) {
+          next.thumbnailUrl = `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
+        }
+      }
+      
+      return next;
+    });
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {

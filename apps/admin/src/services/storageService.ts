@@ -1,5 +1,11 @@
 import { supabase } from '@/lib/supabase';
-import { v4 as uuidv4 } from 'uuid';
+
+// Helper for generating random IDs (fallback if crypto.randomUUID is not available)
+const generateId = () => {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
@@ -16,11 +22,11 @@ export const storageService = {
     if (USE_MOCKS) {
       // Devolver una imagen de placeholder para los mocks
       await delay(null);
-      return `https://picsum.photos/seed/${uuidv4()}/800/400`;
+      return `https://picsum.photos/seed/${generateId()}/800/400`;
     }
 
     const fileExt = file.name.split('.').pop();
-    const fileName = `${folder}/${uuidv4()}.${fileExt}`;
+    const fileName = `${folder}/${generateId()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from('public-assets')
