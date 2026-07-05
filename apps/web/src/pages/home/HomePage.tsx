@@ -234,7 +234,7 @@ export default function HomePage() {
           <p className="text-xs font-medium uppercase tracking-widest text-cee-red">
             Agenda CEE
           </p>
-          <h2 className="text-2xl font-bold">Nuestros Programas</h2>
+          <h2 className="text-2xl font-bold">Próximos Eventos</h2>
         </div>
         <EventSlider events={events} isLoading={eventsLoading} />
       </section>

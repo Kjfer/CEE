@@ -77,8 +77,8 @@ interface RegRow {
   id: string;
   event_id: string;
   first_name: string;
-  last_name_paternal: string;
-  last_name_maternal: string;
+  last_name_paterno: string;
+  last_name_materno: string;
   email: string;
   phone: string;
   is_working: boolean;
@@ -114,8 +114,8 @@ function rowToReg(row: RegRow): EventRegistration {
     id: row.id,
     eventId: row.event_id,
     firstName: row.first_name,
-    lastNamePaternal: row.last_name_paternal,
-    lastNameMaternal: row.last_name_maternal,
+    lastNamePaternal: row.last_name_paterno,
+    lastNameMaternal: row.last_name_materno,
     email: row.email,
     phone: row.phone,
     isWorking: row.is_working,
@@ -300,8 +300,8 @@ export const eventsService = {
       .insert({
         event_id: input.eventId,
         first_name: input.firstName,
-        last_name_paternal: input.lastNamePaternal,
-        last_name_maternal: input.lastNameMaternal,
+        last_name_paterno: input.lastNamePaternal,
+        last_name_materno: input.lastNameMaternal,
         email: input.email,
         phone: input.phone,
         is_working: input.isWorking,

@@ -139,8 +139,8 @@ export const eventsPublicService = {
       .insert({
         event_id: input.eventId,
         first_name: input.firstName,
-        last_name_paternal: input.lastNamePaternal,
-        last_name_maternal: input.lastNameMaternal,
+        last_name_paterno: input.lastNamePaternal,
+        last_name_materno: input.lastNameMaternal,
         email: input.email,
         phone: input.phone,
         is_working: input.isWorking,
@@ -155,8 +155,8 @@ export const eventsPublicService = {
     return {
       data: {
         id: r.id as string, eventId: r.event_id as string,
-        firstName: r.first_name as string, lastNamePaternal: r.last_name_paternal as string,
-        lastNameMaternal: r.last_name_maternal as string, email: r.email as string,
+        firstName: r.first_name as string, lastNamePaternal: r.last_name_paterno as string,
+        lastNameMaternal: r.last_name_materno as string, email: r.email as string,
         phone: r.phone as string, isWorking: r.is_working as boolean,
         wantsCertificate: r.wants_certificate as boolean, certificatePaid: r.certificate_paid as boolean,
         source: r.source as EventRegistration['source'], createdAt: r.created_at as string,
