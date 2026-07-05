@@ -266,6 +266,7 @@ export interface Student {
    * en la plataforma e-learning. Dejar en null hasta que se configure la integración.
    */
   moodleUserId?: number | null;
+  profileId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -288,24 +289,66 @@ export interface Sale {
 
 // ---------- Certificados ----------
 
-export type CertificateStatus = 'draft' | 'pending_signature' | 'signed' | 'revoked';
+export type CertificateStatus = 'draft' | 'pending_signature' | 'issued' | 'signed' | 'revoked';
+
+export type CertificateType = 'course' | 'program';
+
+export type StudentEnrollmentStatus = 'in_progress' | 'completed' | 'approved' | 'failed';
 
 export type SignatureProvider = 'manual' | 'digital';
 
 export interface Certificate {
   id: string;
-  certificateNumber: string; // ej. "CEE-2026-0001"
+  certificateNumber: string;
   studentId?: string | null;
+  profileId?: string | null;
   studentName: string;
   courseId: string;
   courseName: string;
-  issuedAt: string;          // ISO date, ej. "2026-06-01"
+  programId?: string | null;
+  certificateType?: CertificateType;
+  grade?: number | null;
+  academicHours?: number | null;
+  verificationCode?: string | null;
+  pdfUrl?: string | null;
+  previewImageUrl?: string | null;
+  completedAt?: string | null;
+  issuedAt: string;
   status: CertificateStatus;
   signedDocumentUrl?: string | null;
   signatureProvider: SignatureProvider;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface StudentEnrollment {
+  id: string;
+  studentId: string;
+  courseId: string;
+  programId?: string | null;
+  grade?: number | null;
+  status: StudentEnrollmentStatus;
+  completedAt?: string | null;
+  approvedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Certificado público (verificación / LinkedIn). */
+export interface PublicCertificate {
+  certificateNumber: string;
+  studentName: string;
+  courseName: string;
+  programId?: string | null;
+  grade?: number | null;
+  academicHours?: number | null;
+  issuedAt: string;
+  status: CertificateStatus;
+  verificationCode: string;
+  previewImageUrl?: string | null;
+  pdfUrl?: string | null;
 }
 
 // ---------- Notificaciones (admin) ----------

@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Gift, Sparkles, Tag } from 'lucide-react';
 import type { Benefit, BenefitCategory } from '@cee/types';
+import { CertificateCard } from '@/components/profile/CertificateCard';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/hooks/useAuth';
 import { useBenefits } from '@/hooks/useBenefits';
+import { useMyCertificates } from '@/hooks/useMyCertificates';
 import { formatDateLong, getInitials } from '@/lib/utils';
 
 const CATEGORY_ICON: Record<BenefitCategory, typeof Gift> = {
@@ -57,6 +59,7 @@ function BenefitCard({ benefit }: { benefit: Benefit }) {
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { benefits, isLoading: isBenefitsLoading } = useBenefits();
+  const { certificates, isLoading: isCertsLoading, error: certsError } = useMyCertificates(user?.id);
 
   if (isAuthLoading) {
     return (
@@ -119,6 +122,30 @@ export default function ProfilePage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {benefits.map((benefit) => (
               <BenefitCard key={benefit.id} benefit={benefit} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-6 flex flex-col gap-1">
+          <p className="text-xs font-medium uppercase tracking-widest text-cee-red">Mis logros</p>
+          <h2 className="text-2xl sm:text-3xl">Mis certificados</h2>
+          <p className="mt-1 text-muted-foreground">
+            Certificados digitales emitidos por CEE-FIIS al completar tus cursos.
+          </p>
+        </div>
+
+        {isCertsLoading ? (
+          <p className="text-muted-foreground">Cargando certificados...</p>
+        ) : certsError ? (
+          <p className="text-destructive">{certsError}</p>
+        ) : certificates.length === 0 ? (
+          <p className="text-muted-foreground">Aún no tienes certificados emitidos.</p>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2">
+            {certificates.map((cert) => (
+              <CertificateCard key={cert.id} certificate={cert} />
             ))}
           </div>
         )}

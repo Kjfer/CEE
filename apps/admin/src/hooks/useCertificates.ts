@@ -70,6 +70,11 @@ export function useCertificates() {
     setCerts((prev) => prev.map((c) => (c.id === id ? res.data : c)));
   };
 
+  const regenerate = async (id: string) => {
+    const res = await certificatesService.regenerateFiles(id);
+    setCerts((prev) => prev.map((c) => (c.id === id ? res.data : c)));
+  };
+
   return {
     isLoading,
     certs,
@@ -82,5 +87,6 @@ export function useCertificates() {
     page, totalPages, goNext, goPrev, hasNext, hasPrev,
     changeStatus,
     revoke,
+    regenerate,
   };
 }

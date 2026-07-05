@@ -1,0 +1,149 @@
+-- Seed: usuario de prueba con curso aprobado y certificado emitido (sin PDF en storage; se genera desde admin/web).
+
+-- Usuario auth de demo
+INSERT INTO auth.users (
+  id,
+  instance_id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at
+) VALUES (
+  'eee11111-1111-1111-1111-111111111111',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'certificado.demo@cee-fiis.pe',
+  crypt('CertDemo2026!', gen_salt('bf')),
+  timezone('utc'::text, now()),
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"name":"María Certificado Demo","role":"student"}'::jsonb,
+  timezone('utc'::text, now()),
+  timezone('utc'::text, now())
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO auth.identities (
+  id,
+  user_id,
+  identity_data,
+  provider,
+  provider_id,
+  last_sign_in_at,
+  created_at,
+  updated_at
+) VALUES (
+  'eee11111-1111-1111-1111-111111111111',
+  'eee11111-1111-1111-1111-111111111111',
+  jsonb_build_object('sub', 'eee11111-1111-1111-1111-111111111111', 'email', 'certificado.demo@cee-fiis.pe'),
+  'email',
+  'eee11111-1111-1111-1111-111111111111',
+  timezone('utc'::text, now()),
+  timezone('utc'::text, now()),
+  timezone('utc'::text, now())
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.profiles (id, name, email, role)
+VALUES (
+  'eee11111-1111-1111-1111-111111111111',
+  'María Certificado Demo',
+  'certificado.demo@cee-fiis.pe',
+  'student'
+) ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  email = EXCLUDED.email;
+
+INSERT INTO public.students (
+  id,
+  dni,
+  first_name,
+  last_name_paterno,
+  last_name_materno,
+  email,
+  phone,
+  city,
+  source,
+  profile_id
+) VALUES (
+  'eee22222-2222-2222-2222-222222222222',
+  '70999999',
+  'María',
+  'Certificado',
+  'Demo',
+  'certificado.demo@cee-fiis.pe',
+  '999000111',
+  'Lima',
+  'web',
+  'eee11111-1111-1111-1111-111111111111'
+) ON CONFLICT (id) DO UPDATE SET profile_id = EXCLUDED.profile_id;
+
+-- Enrollment aprobado en Liderazgo y Habilidades Directivas
+INSERT INTO public.student_enrollments (
+  student_id,
+  course_id,
+  program_id,
+  grade,
+  status,
+  completed_at,
+  approved_at
+)
+SELECT
+  'eee22222-2222-2222-2222-222222222222',
+  c.id,
+  pc.program_id,
+  17.50,
+  'approved',
+  '2026-06-15',
+  '2026-06-20'
+FROM public.courses c
+LEFT JOIN public.program_courses pc ON pc.course_id = c.id
+WHERE c.slug = 'liderazgo-habilidades'
+ON CONFLICT (student_id, course_id) DO UPDATE SET
+  grade = EXCLUDED.grade,
+  status = EXCLUDED.status,
+  program_id = EXCLUDED.program_id,
+  completed_at = EXCLUDED.completed_at,
+  approved_at = EXCLUDED.approved_at;
+
+-- Certificado emitido (PDF se genera al usar admin o vista web)
+INSERT INTO public.certificates (
+  certificate_number,
+  student_id,
+  profile_id,
+  student_name,
+  course_id,
+  course_name,
+  program_id,
+  certificate_type,
+  grade,
+  academic_hours,
+  issued_at,
+  completed_at,
+  status,
+  verification_code,
+  signature_provider
+)
+SELECT
+  'CEE-2026-DEMO1',
+  'eee22222-2222-2222-2222-222222222222',
+  'eee11111-1111-1111-1111-111111111111',
+  'María Certificado Demo',
+  c.id,
+  c.title,
+  pc.program_id,
+  'course',
+  17.50,
+  c.academic_hours,
+  '2026-06-20',
+  '2026-06-15',
+  'issued',
+  'CEE-DEMO-2026-A1',
+  'digital'
+FROM public.courses c
+LEFT JOIN public.program_courses pc ON pc.course_id = c.id
+WHERE c.slug = 'liderazgo-habilidades'
+ON CONFLICT (certificate_number) DO NOTHING;
