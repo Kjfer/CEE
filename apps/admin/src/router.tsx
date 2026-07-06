@@ -32,6 +32,7 @@ const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const AboutUsFormPage = lazy(() => import('@/pages/settings/AboutUsFormPage'));
 const AdminsListPage = lazy(() => import('@/pages/settings/AdminsListPage'));
+const TermsConditionsPage = lazy(() => import('@/pages/settings/TermsConditionsPage'));
 const SecretariaChat = lazy(() => import('@/pages/SecretariaChat'));
 const BotPage = lazy(() => import('@/pages/BotPage'));
 const AccessDeniedPage = lazy(() => import('@/pages/AccessDeniedPage'));
@@ -95,6 +96,7 @@ export const router = createBrowserRouter([
           { path: '/debug/consulta-datos', element: withSuspense(<BotPage />) },
           { path: '/configuracion/nosotros', element: withSuspense(<AboutUsFormPage />) },
           { path: '/configuracion/administradores', element: withSuspense(<AdminsListPage />) },
+          { path: '/configuracion/terminos', element: withSuspense(<TermsConditionsPage />) },
         ],
       },
     ],

@@ -581,5 +581,9 @@ export interface SiteSettings {
   history: string;
   aboutImageUrl: string;
   heroImages: string[];
+  termsPdfUrl: string | null;
+  termsPdfPath: string | null;
+  termsPdfName: string | null;
+  termsPdfUpdatedAt: string | null;
   updatedAt: string;
 }
