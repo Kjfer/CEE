@@ -168,7 +168,7 @@ export default function CoursePage({ initialCourse }: CoursePageProps = {}) {
             </LandingSection>
 
             <LandingSection id="contenido">
-              <LandingSyllabus modules={course.syllabus} />
+              <LandingSyllabus course={course} />
             </LandingSection>
 
             <LandingSection>

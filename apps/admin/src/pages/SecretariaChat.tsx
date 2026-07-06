@@ -223,9 +223,12 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
       const { data } = await coursesService.createCourse({
         title:               args.title as string,
         description:         args.description as string,
-        price:               Number(args.price) || 0,  // cast defensivo — llama puede enviar string
+        price:               Number(args.price) || 0,
         category:            args.category as CourseCategory,
         modality:            args.modality as CourseModality,
+        level:               'Básico',
+        academicHours:       Number(args.academicHours) || 0,
+        instructorIds:       [],
         moodleCourseId:      0,
         status:              'draft',
         syllabusFileName:    null,

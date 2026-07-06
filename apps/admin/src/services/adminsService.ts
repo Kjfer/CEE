@@ -26,10 +26,10 @@ export const adminsService = {
       .order('created_at', { ascending: false });
 
     if (error) {
-      return { data: null, error: error.message };
+      return { data: null as any, error: error.message };
     }
 
-    return { data: data as AdminProfile[], error: null };
+    return { data: data as AdminProfile[], error: undefined };
   },
 
   async createAdmin(input: CreateAdminInput): Promise<ApiResponse<null>> {
@@ -41,9 +41,9 @@ export const adminsService = {
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
 
-      return { data: null, error: null };
+      return { data: null as any, error: undefined };
     } catch (e: any) {
-      return { data: null, error: e.message || 'Error al crear administrador' };
+      return { data: null as any, error: e.message || 'Error al crear administrador' };
     }
   },
 
@@ -56,9 +56,9 @@ export const adminsService = {
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
 
-      return { data: null, error: null };
+      return { data: null as any, error: undefined };
     } catch (e: any) {
-      return { data: null, error: e.message || 'Error al ejecutar la acción' };
+      return { data: null as any, error: e.message || 'Error al actualizar estado' };
     }
   }
 };

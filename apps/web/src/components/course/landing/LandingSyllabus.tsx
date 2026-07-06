@@ -1,25 +1,42 @@
-import type { SyllabusModule } from '@cee/types';
-import { Sparkles } from 'lucide-react';
-import { SyllabusAccordion } from '@/components/course/SyllabusAccordion';
+import type { Course } from '@cee/types';
+import { Sparkles, FileText, Download } from 'lucide-react';
 import { SectionHeading } from './SectionHeading';
+import { Button } from '@/components/ui/button';
 
 interface LandingSyllabusProps {
-  modules: SyllabusModule[];
+  course: Course;
 }
 
-/** Plan de estudios (reutiliza SyllabusAccordion) + banner de proyecto integrador genérico. */
-export function LandingSyllabus({ modules }: LandingSyllabusProps) {
+/** Plan de estudios y brochure. */
+export function LandingSyllabus({ course }: LandingSyllabusProps) {
   return (
     <div>
       <SectionHeading
         eyebrow="Plan de estudios"
-        title="Contenido del programa"
-        description="Metodología Learning by Doing: cada sesión combina fundamentos conceptuales con la resolución de casos y proyectos aplicados."
+        title="Brochure del Curso"
+        description="Conoce en detalle todos los temas que desarrollaremos, la metodología y los beneficios."
       />
 
-      {modules.length > 0 && (
-        <div className="mt-6">
-          <SyllabusAccordion modules={modules} />
+      {course.syllabusPdfUrl ? (
+        <div className="mt-6 flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-gray-50 p-8 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-cee-red-600">
+            <FileText className="h-8 w-8" />
+          </div>
+          <h3 className="mb-2 text-lg font-semibold text-gray-900">Descarga el sílabo oficial</h3>
+          <p className="mb-6 max-w-md text-sm text-gray-500">
+            Obtén el brochure en formato PDF con la descripción completa de los módulos, 
+            perfil del egresado y detalles académicos de este curso.
+          </p>
+          <Button asChild className="gap-2 bg-cee-red-600 hover:bg-cee-red-700">
+            <a href={course.syllabusPdfUrl} target="_blank" rel="noreferrer">
+              <Download className="h-4 w-4" />
+              Descargar Brochure PDF
+            </a>
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-6 p-6 text-center text-gray-500 border rounded-xl bg-gray-50">
+          Brochure próximamente disponible.
         </div>
       )}
 

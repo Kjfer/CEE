@@ -20,6 +20,7 @@ import {
   Shield,
   Video,
   FileText,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authService } from '@/services/auth.service';
@@ -29,6 +30,7 @@ import { useAuthStore } from '@/store/authStore';
 
 const TOP_ITEMS = [
   { label: 'Dashboard',  path: '/',           icon: LayoutDashboard },
+  { label: 'Programas',  path: '/programas',  icon: Layers },
   { label: 'Cursos',     path: '/cursos',     icon: BookOpen },
   { label: 'Profesores', path: '/profesores', icon: Users },
   { label: 'Eventos',    path: '/eventos',    icon: CalendarDays },

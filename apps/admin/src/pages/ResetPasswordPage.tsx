@@ -17,7 +17,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     // Escuchar cambios de estado en la sesión (el enlace de reseteo autentica automáticamente al usuario)
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event, _session) => {
         if (event === 'PASSWORD_RECOVERY') {
           // El usuario ha sido autenticado por el enlace de recuperación y puede cambiar su contraseña
           console.log('Recovery session active');
