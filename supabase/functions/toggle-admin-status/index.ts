@@ -21,7 +21,7 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
     const token = authHeader.replace('Bearer ', '');
-    
+
     const { data: { user }, error: userError } = await supabaseUserClient.auth.getUser(token);
     if (userError || !user) throw new Error(`Unauthorized: ${userError?.message || 'No user found'}`);
 
@@ -41,13 +41,8 @@ serve(async (req) => {
       throw new Error('Missing required fields: targetUserId, action');
     }
 
-    if (targetUserId === user.id) {
-      throw new Error('No puedes cambiar tu propio estado.');
-    }
-
     const supabaseAdminClient = createClient(supabaseUrl, serviceRoleKey);
-    
-    // Validar que el target user no sea superadmin (un superadmin no puede inhabilitar a otro superadmin)
+
     const { data: targetProfile, error: targetProfileError } = await supabaseAdminClient
       .from('profiles')
       .select('is_superadmin')
@@ -58,15 +53,25 @@ serve(async (req) => {
       throw new Error('Target user no encontrado.');
     }
 
-    if (action === 'toggle_status' && targetProfile.is_superadmin) {
-      throw new Error('No puedes inhabilitar a otro Super Administrador.');
-    }
+    // La validación de "no dejar el sistema sin ningún Super Admin activo"
+    // (incluyendo auto-degradarse/auto-desactivarse siendo el único) vive en
+    // el trigger trg_enforce_admin_privilege_changes de public.profiles — es
+    // la fuente de verdad real, no solo esta verificación de la Edge
+    // Function. Si el update la viola, el trigger la rechaza y su mensaje
+    // llega tal cual al usuario más abajo.
 
     if (action === 'promote') {
       if (targetProfile.is_superadmin) throw new Error('El usuario ya es Super Administrador.');
       const { error: updateError } = await supabaseAdminClient
         .from('profiles')
         .update({ is_superadmin: true })
+        .eq('id', targetUserId);
+      if (updateError) throw updateError;
+    } else if (action === 'demote') {
+      if (!targetProfile.is_superadmin) throw new Error('El usuario ya no es Super Administrador.');
+      const { error: updateError } = await supabaseAdminClient
+        .from('profiles')
+        .update({ is_superadmin: false })
         .eq('id', targetUserId);
       if (updateError) throw updateError;
     } else if (action === 'toggle_status') {
@@ -85,6 +90,8 @@ serve(async (req) => {
       });
 
       if (banError) throw banError;
+    } else {
+      throw new Error(`Acción desconocida: ${action}`);
     }
 
     return new Response(JSON.stringify({ success: true }), {
