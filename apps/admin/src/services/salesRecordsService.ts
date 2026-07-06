@@ -32,6 +32,13 @@ interface SaleRow {
   updated_at: string;
 }
 
+interface StudentNameRow {
+  id: string;
+  first_name: string;
+  last_name_paterno: string;
+  last_name_materno: string;
+}
+
 function rowToSale(row: SaleRow): Sale {
   return {
     id: row.id,
@@ -47,6 +54,13 @@ function rowToSale(row: SaleRow): Sale {
   };
 }
 
+function buildStudentName(student: StudentNameRow): string {
+  return [student.first_name, student.last_name_paterno, student.last_name_materno]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}
+
 export const salesRecordsService = {
   async getSales(): Promise<ApiResponse<Sale[]>> {
     if (USE_MOCKS) {
@@ -60,7 +74,33 @@ export const salesRecordsService = {
       .order('created_at', { ascending: false });
 
     if (error) throw new Error('No se pudieron cargar las ventas.');
-    return { data: (data ?? []).map((r) => rowToSale(r as SaleRow)) };
+
+    const sales = (data ?? []) as SaleRow[];
+    const missingNames = sales
+      .filter((sale) => !sale.student_name && sale.user_id)
+      .map((sale) => sale.user_id as string);
+
+    const studentNameMap = new Map<string, string>();
+    if (missingNames.length > 0) {
+      const { data: studentsData, error: studentsError } = await supabase
+        .from('students')
+        .select('id, first_name, last_name_paterno, last_name_materno')
+        .in('id', missingNames);
+
+      if (studentsError) throw new Error('No se pudieron cargar los nombres de los alumnos.');
+
+      (studentsData ?? []).forEach((student) => {
+        const row = student as StudentNameRow;
+        studentNameMap.set(row.id, buildStudentName(row));
+      });
+    }
+
+    return {
+      data: sales.map((sale) => ({
+        ...rowToSale(sale),
+        studentName: sale.student_name || studentNameMap.get(sale.user_id ?? '') || sale.student_name,
+      })),
+    };
   },
 
   async updateStatus(id: string, status: Sale['status']): Promise<ApiResponse<Sale>> {
