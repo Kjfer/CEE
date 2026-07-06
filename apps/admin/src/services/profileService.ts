@@ -113,24 +113,49 @@ export const profileService = {
     return { data: rowToProfile(data as ProfileRow) };
   },
 
-  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<void>> {
+  /**
+   * Paso 1 del cambio de contraseña: pide a Supabase que envíe un código
+   * (nonce) al correo registrado del usuario. Requiere "Secure password
+   * change" habilitado en Supabase Dashboard → Authentication → Providers
+   * → Email (si no, updateUser() más abajo simplemente no exige nonce).
+   */
+  async requestPasswordChangeCode(): Promise<ApiResponse<void>> {
     if (USE_MOCKS) {
-      if (!currentPassword) throw new Error('Ingresa tu contraseña actual.');
-      if (newPassword.length < 8) throw new Error('La nueva contraseña debe tener al menos 8 caracteres.');
       return delay({ data: undefined as void });
     }
-    // Re-authenticate to verify current password
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.email) throw new Error('No hay sesión activa.');
+    const { error } = await supabase.auth.reauthenticate();
+    if (error) {
+      if (error.code === 'over_email_send_rate_limit') {
+        throw new Error('Espera un momento antes de solicitar otro código.');
+      }
+      throw new Error(error.message || 'No se pudo enviar el código de verificación.');
+    }
+    return { data: undefined as void };
+  },
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email:    user.email,
-      password: currentPassword,
-    });
-    if (signInError) throw new Error('La contraseña actual es incorrecta.');
-
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) throw new Error('No se pudo cambiar la contraseña. Intenta nuevamente.');
+  /**
+   * Paso 2: confirma el cambio de contraseña con el código recibido por
+   * correo (nonce nativo de Supabase Auth — no una tabla de códigos propia).
+   */
+  async changePasswordWithNonce(newPassword: string, nonce: string): Promise<ApiResponse<void>> {
+    if (USE_MOCKS) {
+      if (newPassword.length < 8) throw new Error('La nueva contraseña debe tener al menos 8 caracteres.');
+      if (!nonce) throw new Error('Ingresa el código de verificación.');
+      return delay({ data: undefined as void });
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword, nonce });
+    if (error) {
+      if (error.code === 'reauthentication_not_valid') {
+        throw new Error('El código ingresado es incorrecto.');
+      }
+      if (error.code === 'otp_expired') {
+        throw new Error('El código expiró. Solicita uno nuevo.');
+      }
+      if (error.code === 'reauthentication_needed') {
+        throw new Error('Necesitas solicitar un nuevo código antes de continuar.');
+      }
+      throw new Error(error.message || 'No se pudo cambiar la contraseña. Intenta nuevamente.');
+    }
     return { data: undefined as void };
   },
 };

@@ -1,6 +1,6 @@
 import { type ChangeEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import type { Setting, UserProfile } from '@cee/types';
-import { Camera, Eye, EyeOff, Info } from 'lucide-react';
+import { Camera, Eye, EyeOff, Info, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -133,24 +133,47 @@ export default function ProfilePage() {
   };
 
   // ── Security tab ─────────────────────────────────────────────────────────────
+  // Flujo de 2 pasos con reauthenticate() nativo de Supabase Auth: se envía un
+  // código (nonce) al correo del usuario, y ese código se pasa a updateUser()
+  // para confirmar el cambio de contraseña. Requiere "Secure password change"
+  // habilitado en Supabase Dashboard → Authentication → Providers → Email.
 
-  const [currentPwd,   setCurrentPwd]   = useState('');
+  const [pwdStep,        setPwdStep]        = useState<'idle' | 'code_sent'>('idle');
+  const [requestingCode, setRequestingCode] = useState(false);
   const [newPwd,       setNewPwd]       = useState('');
   const [confirmPwd,   setConfirmPwd]   = useState('');
-  const [showPwds,     setShowPwds]     = useState({ current: false, newPwd: false, confirm: false });
+  const [nonce,        setNonce]        = useState('');
+  const [showPwds,     setShowPwds]     = useState({ newPwd: false, confirm: false });
   const [pwdSaving,    setPwdSaving]    = useState(false);
   const [pwdMsg,       setPwdMsg]       = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const requestCode = async (isResend: boolean) => {
+    setPwdMsg(null);
+    setRequestingCode(true);
+    try {
+      await profileService.requestPasswordChangeCode();
+      setPwdStep('code_sent');
+      toastSuccess(
+        isResend ? 'Código reenviado' : 'Código enviado',
+        'Revisa tu correo para obtener el código de verificación.',
+      );
+    } catch (err) {
+      setPwdMsg({ type: 'error', text: err instanceof Error ? err.message : 'No se pudo enviar el código.' });
+    } finally {
+      setRequestingCode(false);
+    }
+  };
 
   const handlePasswordChange = async (e: FormEvent) => {
     e.preventDefault();
     setPwdMsg(null);
-    if (!currentPwd) { setPwdMsg({ type: 'error', text: 'Ingresa tu contraseña actual.' }); return; }
     if (newPwd.length < 8) { setPwdMsg({ type: 'error', text: 'La nueva contraseña debe tener al menos 8 caracteres.' }); return; }
     if (newPwd !== confirmPwd) { setPwdMsg({ type: 'error', text: 'Las contraseñas no coinciden.' }); return; }
+    if (!nonce.trim()) { setPwdMsg({ type: 'error', text: 'Ingresa el código de verificación enviado a tu correo.' }); return; }
     setPwdSaving(true);
     try {
-      await profileService.changePassword(currentPwd, newPwd);
-      setCurrentPwd(''); setNewPwd(''); setConfirmPwd('');
+      await profileService.changePasswordWithNonce(newPwd, nonce.trim());
+      setNewPwd(''); setConfirmPwd(''); setNonce(''); setPwdStep('idle');
       setPwdMsg({ type: 'success', text: '¡Contraseña cambiada! Por seguridad, vuelve a iniciar sesión.' });
       toastSuccess('Contraseña actualizada', 'Cierra sesión y vuelve a ingresar con tu nueva contraseña.');
     } catch (err) {
@@ -158,6 +181,12 @@ export default function ProfilePage() {
     } finally {
       setPwdSaving(false);
     }
+  };
+
+  const handleCancelPasswordChange = () => {
+    setPwdStep('idle');
+    setNewPwd(''); setConfirmPwd(''); setNonce('');
+    setPwdMsg(null);
   };
 
   const toggleShow = (field: keyof typeof showPwds) =>
@@ -363,95 +392,131 @@ export default function ProfilePage() {
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeTab === 'security' && (
           <div className="p-6">
-            <form onSubmit={handlePasswordChange} className="grid max-w-lg gap-5">
-              {/* Current password */}
-              <div className="grid gap-1.5">
-                <Label htmlFor="currentPwd">Contraseña actual</Label>
-                <div className="flex">
+            {pwdStep === 'idle' ? (
+              <div className="grid max-w-lg gap-4">
+                <p className="text-sm text-gray-600">
+                  Por tu seguridad, para cambiar la contraseña primero te enviaremos un código de
+                  verificación a tu correo registrado.
+                </p>
+
+                <Feedback msg={pwdMsg} />
+
+                <Button
+                  type="button"
+                  disabled={requestingCode}
+                  onClick={() => void requestCode(false)}
+                  className="w-fit bg-[#682222] text-white transition-colors duration-[400ms] hover:bg-[#4F1A1A]"
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  {requestingCode ? 'Enviando código...' : 'Cambiar contraseña'}
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handlePasswordChange} className="grid max-w-lg gap-5">
+                <div className="flex items-start gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-xs text-emerald-700">
+                  <Mail className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>Te enviamos un código de verificación a tu correo. Ingrésalo abajo junto con tu nueva contraseña.</span>
+                </div>
+
+                {/* Verification code (nonce) */}
+                <div className="grid gap-1.5">
+                  <Label htmlFor="nonce">Código de verificación</Label>
                   <input
-                    id="currentPwd"
-                    type={showPwds.current ? 'text' : 'password'}
-                    value={currentPwd}
-                    onChange={(e) => setCurrentPwd(e.target.value)}
-                    autoComplete="current-password"
-                    className={cn(pwdInputCls, 'rounded-r-none border-r-0')}
+                    id="nonce"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={nonce}
+                    onChange={(e) => setNonce(e.target.value)}
+                    placeholder="Ej. 123456"
+                    className={inputCls}
                   />
                   <button
                     type="button"
-                    onClick={() => toggleShow('current')}
-                    className="flex h-10 w-10 items-center justify-center rounded-r-md border border-input bg-gray-50 text-gray-400 hover:text-gray-700"
-                    aria-label={showPwds.current ? 'Ocultar' : 'Mostrar'}
+                    onClick={() => void requestCode(true)}
+                    disabled={requestingCode}
+                    className="w-fit text-[11px] font-medium text-[#682222] hover:underline disabled:opacity-50"
                   >
-                    {showPwds.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {requestingCode ? 'Reenviando...' : '¿No te llegó? Reenviar código'}
                   </button>
                 </div>
-              </div>
 
-              {/* New password */}
-              <div className="grid gap-1.5">
-                <Label htmlFor="newPwd">Nueva contraseña</Label>
-                <div className="flex">
-                  <input
-                    id="newPwd"
-                    type={showPwds.newPwd ? 'text' : 'password'}
-                    value={newPwd}
-                    onChange={(e) => setNewPwd(e.target.value)}
-                    autoComplete="new-password"
-                    className={cn(pwdInputCls, 'rounded-r-none border-r-0')}
-                  />
+                {/* New password */}
+                <div className="grid gap-1.5">
+                  <Label htmlFor="newPwd">Nueva contraseña</Label>
+                  <div className="flex">
+                    <input
+                      id="newPwd"
+                      type={showPwds.newPwd ? 'text' : 'password'}
+                      value={newPwd}
+                      onChange={(e) => setNewPwd(e.target.value)}
+                      autoComplete="new-password"
+                      className={cn(pwdInputCls, 'rounded-r-none border-r-0')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleShow('newPwd')}
+                      className="flex h-10 w-10 items-center justify-center rounded-r-md border border-input bg-gray-50 text-gray-400 hover:text-gray-700"
+                    >
+                      {showPwds.newPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-[#A9A9A9]">Mínimo 8 caracteres.</p>
+                </div>
+
+                {/* Confirm password */}
+                <div className="grid gap-1.5">
+                  <Label htmlFor="confirmPwd">Confirmar nueva contraseña</Label>
+                  <div className="flex">
+                    <input
+                      id="confirmPwd"
+                      type={showPwds.confirm ? 'text' : 'password'}
+                      value={confirmPwd}
+                      onChange={(e) => setConfirmPwd(e.target.value)}
+                      autoComplete="new-password"
+                      className={cn(pwdInputCls, 'rounded-r-none border-r-0',
+                        confirmPwd && newPwd !== confirmPwd && 'border-rose-400',
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleShow('confirm')}
+                      className="flex h-10 w-10 items-center justify-center rounded-r-md border border-input bg-gray-50 text-gray-400 hover:text-gray-700"
+                    >
+                      {showPwds.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {confirmPwd && newPwd !== confirmPwd && (
+                    <p className="text-[11px] text-rose-500">Las contraseñas no coinciden.</p>
+                  )}
+                </div>
+
+                <Feedback msg={pwdMsg} />
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="submit"
+                    disabled={pwdSaving}
+                    className="w-fit bg-[#682222] text-white transition-colors duration-[400ms] hover:bg-[#4F1A1A]"
+                  >
+                    {pwdSaving ? 'Cambiando...' : 'Confirmar cambio'}
+                  </Button>
                   <button
                     type="button"
-                    onClick={() => toggleShow('newPwd')}
-                    className="flex h-10 w-10 items-center justify-center rounded-r-md border border-input bg-gray-50 text-gray-400 hover:text-gray-700"
+                    onClick={handleCancelPasswordChange}
+                    disabled={pwdSaving}
+                    className="text-xs font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
                   >
-                    {showPwds.newPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    Cancelar
                   </button>
                 </div>
-                <p className="text-[11px] text-[#A9A9A9]">Mínimo 8 caracteres.</p>
-              </div>
 
-              {/* Confirm password */}
-              <div className="grid gap-1.5">
-                <Label htmlFor="confirmPwd">Confirmar nueva contraseña</Label>
-                <div className="flex">
-                  <input
-                    id="confirmPwd"
-                    type={showPwds.confirm ? 'text' : 'password'}
-                    value={confirmPwd}
-                    onChange={(e) => setConfirmPwd(e.target.value)}
-                    autoComplete="new-password"
-                    className={cn(pwdInputCls, 'rounded-r-none border-r-0',
-                      confirmPwd && newPwd !== confirmPwd && 'border-rose-400',
-                    )}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => toggleShow('confirm')}
-                    className="flex h-10 w-10 items-center justify-center rounded-r-md border border-input bg-gray-50 text-gray-400 hover:text-gray-700"
-                  >
-                    {showPwds.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-4 py-3 text-xs text-amber-700">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>Por seguridad, se cerrará tu sesión tras cambiar la contraseña.</span>
                 </div>
-                {confirmPwd && newPwd !== confirmPwd && (
-                  <p className="text-[11px] text-rose-500">Las contraseñas no coinciden.</p>
-                )}
-              </div>
-
-              <Feedback msg={pwdMsg} />
-
-              <Button
-                type="submit"
-                disabled={pwdSaving}
-                className="w-fit bg-[#682222] text-white hover:bg-[#4F1A1A]"
-              >
-                {pwdSaving ? 'Cambiando...' : 'Cambiar contraseña'}
-              </Button>
-
-              <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-4 py-3 text-xs text-amber-700">
-                <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>Por seguridad, se cerrará tu sesión tras cambiar la contraseña.</span>
-              </div>
-            </form>
+              </form>
+            )}
           </div>
         )}
 
