@@ -57,10 +57,18 @@ export default function ProgramFormPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadData() {
-      if (isEditing && id) {
-        setIsLoading(true);
+      if (!isEditing || !id) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
         const { data: prog, error: progErr } = await programsService.getProgram(id);
+        if (!isMounted) return;
         if (progErr || !prog) {
           error('Error', 'No se pudo cargar el programa');
           navigate('/programas');
@@ -86,14 +94,19 @@ export default function ProgramFormPage() {
         });
 
         if (prog.imageUrl) setExistingImageUrl(prog.imageUrl);
-        
+
         // Load modules
         await fetchModules();
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-      setIsLoading(false);
     }
+
     loadData();
-  }, [id, isEditing, navigate, error]);
+    return () => {
+      isMounted = false;
+    };
+  }, [id, isEditing]);
 
   const fetchModules = async () => {
     if (!id) return;

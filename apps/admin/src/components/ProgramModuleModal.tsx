@@ -9,17 +9,20 @@ export function ProgramModuleModal({ programId, onClose, onAdded }: { programId:
   const { success, error } = useToast();
   const [courses, setCourses] = useState<Course[]>([]);
   const [modules, setModules] = useState<any[]>([]);
+  const [assignedCourseIds, setAssignedCourseIds] = useState<string[]>([]);
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     async function load() {
-      const [{ data: cData }, { data: mData }] = await Promise.all([
+      const [{ data: cData }, { data: mData }, { data: assignedData }] = await Promise.all([
         coursesService.getCourses(),
-        programsService.getProgramCourses(programId)
+        programsService.getProgramCourses(programId),
+        programsService.getAssignedCourseIds(),
       ]);
       if (cData) setCourses(cData);
       if (mData) setModules(mData);
+      if (assignedData) setAssignedCourseIds(assignedData);
     }
     load();
   }, [programId]);
@@ -49,7 +52,7 @@ export function ProgramModuleModal({ programId, onClose, onAdded }: { programId:
     setIsSubmitting(false);
   };
 
-  const availableCourses = courses.filter(c => !modules.some(m => m.course_id === c.id));
+  const availableCourses = courses.filter(c => !assignedCourseIds.includes(c.id));
 
   const toggleCourse = (courseId: string) => {
     setSelectedCourseIds(prev => 

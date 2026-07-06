@@ -15,6 +15,64 @@ const delay = <T>(value: T, ms = 400): Promise<T> =>
 
 let programsMock: Program[] = []; // In-memory mock if needed
 
+interface ProgramRow {
+  id: string;
+  slug: string;
+  title: string;
+  category: Program['category'];
+  modality: Program['modality'];
+  level: Program['level'];
+  short_description: string;
+  description: string;
+  price: number;
+  original_price: number | null;
+  image_url: string;
+  start_date: string | null;
+  academic_hours: number;
+  certification: string;
+  rating: number;
+  enrolled_count: number;
+  duration_weeks: number | null;
+  schedule_description: string | null;
+  syllabus_pdf_url: string | null;
+  status: Program['status'];
+  graduate_profile: string[];
+  benefits: string[];
+  syllabus: Program['syllabus'];
+  created_at: string;
+  updated_at: string;
+}
+
+function formatProgram(row: ProgramRow): Program {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    category: row.category,
+    modality: row.modality,
+    level: row.level,
+    shortDescription: row.short_description,
+    description: row.description,
+    price: Number(row.price),
+    originalPrice: row.original_price != null ? Number(row.original_price) : null,
+    imageUrl: row.image_url,
+    startDate: row.start_date ?? '',
+    academicHours: row.academic_hours,
+    certification: row.certification,
+    rating: Number(row.rating),
+    enrolledCount: row.enrolled_count,
+    durationWeeks: row.duration_weeks ?? null,
+    scheduleDescription: row.schedule_description ?? null,
+    syllabusPdfUrl: row.syllabus_pdf_url ?? '',
+    status: row.status,
+    graduateProfile: row.graduate_profile ?? [],
+    benefits: row.benefits ?? [],
+    syllabus: row.syllabus ?? [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export interface ProgramFormInput {
   title: string;
   short_description: string;
@@ -44,7 +102,7 @@ export const programsService = {
       .order('created_at', { ascending: false });
 
     if (error) return { data: null as any, error: error.message };
-    return { data: data as Program[], error: undefined };
+    return { data: (data as ProgramRow[]).map(formatProgram), error: undefined };
   },
 
   async getProgram(id: string): Promise<ApiResponse<Program>> {
@@ -60,7 +118,7 @@ export const programsService = {
       .single();
 
     if (error) return { data: null as any, error: error.message };
-    return { data: data as Program, error: undefined };
+    return { data: formatProgram(data as ProgramRow), error: undefined };
   },
 
   async createProgram(input: ProgramFormInput): Promise<ApiResponse<Program>> {
@@ -122,7 +180,7 @@ export const programsService = {
       .single();
 
     if (error) return { data: null as any, error: error.message };
-    return { data: data as Program, error: undefined };
+    return { data: formatProgram(data as ProgramRow), error: undefined };
   },
 
   async updateProgram(id: string, input: ProgramFormInput): Promise<ApiResponse<Program>> {
@@ -184,7 +242,7 @@ export const programsService = {
       .single();
 
     if (error) return { data: null as any, error: error.message };
-    return { data: data as Program, error: undefined };
+    return { data: formatProgram(data as ProgramRow), error: undefined };
   },
 
   async deleteProgram(id: string): Promise<ApiResponse<null>> {
@@ -199,7 +257,15 @@ export const programsService = {
   },
 
   // --- Program Courses (Modules) ---
-  
+
+  async getAssignedCourseIds(): Promise<ApiResponse<string[]>> {
+    if (USE_MOCKS) return delay({ data: [], error: undefined });
+
+    const { data, error } = await supabase.from('program_courses').select('course_id');
+    if (error) return { data: null as any, error: error.message };
+    return { data: (data ?? []).map((row) => row.course_id), error: undefined };
+  },
+
   async getProgramCourses(programId: string): Promise<ApiResponse<any[]>> {
     if (USE_MOCKS) return delay({ data: [], error: undefined });
 
@@ -273,10 +339,36 @@ export const programsService = {
       .eq('course_id', courseId);
 
     if (error) return { data: null as any, error: error.message };
-    
+
+    // Cerrar los huecos de sort_order que deja el curso eliminado
+    await programsService.renumberProgramCourses(programId);
+
     // Auto update program hours
     await programsService.updateProgramHoursFromCourses(programId);
-    
+
     return { data: null as any, error: undefined };
-  }
+  },
+
+  async renumberProgramCourses(programId: string): Promise<ApiResponse<null>> {
+    if (USE_MOCKS) return delay({ data: null as any, error: undefined });
+
+    const { data: remaining, error: fetchError } = await supabase
+      .from('program_courses')
+      .select('id, sort_order')
+      .eq('program_id', programId)
+      .order('sort_order', { ascending: true });
+
+    if (fetchError) return { data: null as any, error: fetchError.message };
+
+    for (const [index, row] of (remaining ?? []).entries()) {
+      if (row.sort_order === index + 1) continue;
+      const { error: updateError } = await supabase
+        .from('program_courses')
+        .update({ sort_order: index + 1 })
+        .eq('id', row.id);
+      if (updateError) return { data: null as any, error: updateError.message };
+    }
+
+    return { data: null as any, error: undefined };
+  },
 };
