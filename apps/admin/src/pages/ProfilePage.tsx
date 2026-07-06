@@ -35,25 +35,39 @@ function Feedback({ msg }: { msg: { type: 'success' | 'error'; text: string } | 
 
 // ─── Settings KEYS config ─────────────────────────────────────────────────────
 
-const SETTINGS_CONFIG: { key: string; label: string; type?: 'number'; helpText?: string }[] = [
-  { key: 'cee_name',              label: 'Nombre del centro' },
-  { key: 'cee_phone',             label: 'Teléfono' },
-  { key: 'cee_whatsapp',          label: 'WhatsApp' },
-  { key: 'secretary_email',       label: 'Correo de notificaciones' },
+interface SettingField {
+  key: string;
+  label: string;
+  type?: 'number';
+  helpText?: string;
+  /** Ocupa las 2 columnas del grid en vez de compartir fila con el siguiente campo. */
+  fullWidth?: boolean;
+}
+
+const CONTACT_FIELDS: SettingField[] = [
+  { key: 'cee_name',        label: 'Nombre del centro', fullWidth: true },
+  { key: 'cee_phone',       label: 'Teléfono' },
+  { key: 'cee_whatsapp',    label: 'WhatsApp' },
+  { key: 'secretary_email', label: 'Correo de notificaciones', fullWidth: true },
+];
+
+const ALERT_FIELDS: SettingField[] = [
   {
     key:      'min_students_default',
     label:    'Mínimo de alumnos por defecto',
     type:     'number',
     helpText: 'Este valor se pre-llena al crear un nuevo curso. Cada curso puede tener su propio mínimo diferente.',
   },
-  { key: 'alert_days_default',    label: 'Días de anticipación para alertas', type: 'number' },
+  { key: 'alert_days_default', label: 'Días de anticipación para alertas', type: 'number' },
 ];
+
+const SETTINGS_CONFIG: SettingField[] = [...CONTACT_FIELDS, ...ALERT_FIELDS];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
-  const { success: toastSuccess } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
 
@@ -152,6 +166,7 @@ export default function ProfilePage() {
   // ── CEE Settings tab ──────────────────────────────────────────────────────────
 
   const [settingsValues,  setSettingsValues]  = useState<Record<string, string>>({});
+  const [initialValues,   setInitialValues]   = useState<Record<string, string>>({});
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsSaving,  setSettingsSaving]  = useState(false);
   const [settingsMsg,     setSettingsMsg]     = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -166,10 +181,15 @@ export default function ProfilePage() {
         const map: Record<string, string> = {};
         data.forEach((s: Setting) => { map[s.key] = s.value; });
         setSettingsValues(map);
+        setInitialValues(map);
       })
       .catch(() => {})
       .finally(() => setSettingsLoading(false));
   }, [isAdmin]);
+
+  const settingsDirty = SETTINGS_CONFIG.some(
+    (cfg) => (settingsValues[cfg.key] ?? '') !== (initialValues[cfg.key] ?? ''),
+  );
 
   const handleSettingsSave = async (e: FormEvent) => {
     e.preventDefault();
@@ -182,8 +202,12 @@ export default function ProfilePage() {
         ),
       );
       setSettingsMsg({ type: 'success', text: 'Configuración guardada correctamente.' });
+      setInitialValues(settingsValues);
+      toastSuccess('Configuración guardada', 'Los cambios se aplicaron correctamente.');
     } catch (err) {
-      setSettingsMsg({ type: 'error', text: err instanceof Error ? err.message : 'No se pudo guardar.' });
+      const text = err instanceof Error ? err.message : 'No se pudo guardar.';
+      setSettingsMsg({ type: 'error', text });
+      toastError('No se pudo guardar', text);
     } finally {
       setSettingsSaving(false);
     }
@@ -444,31 +468,65 @@ export default function ProfilePage() {
             {settingsLoading ? (
               <p className="text-sm text-[#A9A9A9]">Cargando configuración...</p>
             ) : (
-              <form onSubmit={handleSettingsSave} className="grid max-w-lg gap-5">
-                {SETTINGS_CONFIG.map((cfg) => (
-                  <div key={cfg.key} className="grid gap-1.5">
-                    <Label htmlFor={cfg.key}>{cfg.label}</Label>
-                    <input
-                      id={cfg.key}
-                      type={cfg.type ?? 'text'}
-                      value={settingsValues[cfg.key] ?? ''}
-                      onChange={(e) =>
-                        setSettingsValues((p) => ({ ...p, [cfg.key]: e.target.value }))
-                      }
-                      className={inputCls}
-                    />
-                    {cfg.helpText && (
-                      <p className="text-[11px] text-[#A9A9A9]">{cfg.helpText}</p>
-                    )}
+              <form onSubmit={handleSettingsSave} className="grid max-w-3xl gap-6">
+                {/* ── Sub-sección: Datos de contacto ── */}
+                <div className="rounded-lg border border-gray-100 p-5">
+                  <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-[#682222]">
+                    Datos de contacto
+                  </p>
+                  <div className="grid gap-5 lg:grid-cols-2">
+                    {CONTACT_FIELDS.map((cfg) => (
+                      <div key={cfg.key} className={cn('grid gap-1.5', cfg.fullWidth && 'lg:col-span-2')}>
+                        <Label htmlFor={cfg.key}>{cfg.label}</Label>
+                        <input
+                          id={cfg.key}
+                          type={cfg.type ?? 'text'}
+                          value={settingsValues[cfg.key] ?? ''}
+                          onChange={(e) =>
+                            setSettingsValues((p) => ({ ...p, [cfg.key]: e.target.value }))
+                          }
+                          className={inputCls}
+                        />
+                        {cfg.helpText && (
+                          <p className="text-[11px] text-[#A9A9A9]">{cfg.helpText}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* ── Sub-sección: Configuración de alertas ── */}
+                <div className="rounded-lg border border-gray-100 p-5">
+                  <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-[#682222]">
+                    Configuración de alertas
+                  </p>
+                  <div className="grid gap-5 lg:grid-cols-2">
+                    {ALERT_FIELDS.map((cfg) => (
+                      <div key={cfg.key} className={cn('grid gap-1.5', cfg.fullWidth && 'lg:col-span-2')}>
+                        <Label htmlFor={cfg.key}>{cfg.label}</Label>
+                        <input
+                          id={cfg.key}
+                          type={cfg.type ?? 'text'}
+                          value={settingsValues[cfg.key] ?? ''}
+                          onChange={(e) =>
+                            setSettingsValues((p) => ({ ...p, [cfg.key]: e.target.value }))
+                          }
+                          className={inputCls}
+                        />
+                        {cfg.helpText && (
+                          <p className="text-[11px] text-[#A9A9A9]">{cfg.helpText}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 <Feedback msg={settingsMsg} />
 
                 <Button
                   type="submit"
-                  disabled={settingsSaving}
-                  className="w-fit bg-[#682222] text-white hover:bg-[#4F1A1A]"
+                  disabled={settingsSaving || !settingsDirty}
+                  className="w-fit bg-[#682222] text-white transition-colors duration-[400ms] hover:bg-[#4F1A1A]"
                 >
                   {settingsSaving ? 'Guardando...' : 'Guardar configuración'}
                 </Button>
