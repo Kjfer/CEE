@@ -46,6 +46,7 @@ const BOTTOM_ITEMS = [
   { label: 'Certificados',   path: '/certificados',    icon: Award },
   { label: 'Notificaciones', path: '/notificaciones',  icon: Bell },
   { label: 'Web (Nosotros)', path: '/configuracion/nosotros', icon: Settings },
+  { label: 'Términos y Condiciones', path: '/configuracion/terminos', icon: FileText },
   { label: 'Administradores', path: '/configuracion/administradores', icon: Shield },
   { label: 'Asistente CEE',  path: '/asistente',       icon: Bot },
 ] as const;

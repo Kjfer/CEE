@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { LegalPageLayout, LegalSection, type LegalTocItem } from '@/components/legal/LegalPageLayout';
 import { CONTACT_INFO } from '@/constants/contact.constants';
 import { ROUTES } from '@/constants/routes';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 const TOC: LegalTocItem[] = [
   { id: 'responsable', title: 'Responsable del tratamiento' },
@@ -16,6 +17,9 @@ const TOC: LegalTocItem[] = [
 ];
 
 export default function PrivacyPolicyPage() {
+  const { settings } = useSiteSettings();
+  const termsPdfUrl = settings?.termsPdfUrl ?? null;
+
   return (
     <LegalPageLayout
       title="Política de Privacidad"
@@ -130,9 +134,20 @@ export default function PrivacyPolicyPage() {
             {CONTACT_INFO.email}
           </a>{' '}
           o al {CONTACT_INFO.phone}. También puedes revisar nuestros{' '}
-          <Link to={ROUTES.TERMS} className="text-cee-red hover:underline">
-            Términos y Condiciones
-          </Link>
+          {termsPdfUrl ? (
+            <a
+              href={termsPdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cee-red hover:underline"
+            >
+              Términos y Condiciones
+            </a>
+          ) : (
+            <Link to={ROUTES.TERMS} className="text-cee-red hover:underline">
+              Términos y Condiciones
+            </Link>
+          )}
           .
         </p>
       </LegalSection>
