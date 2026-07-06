@@ -9,4 +9,13 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    // Evita que Vite congele una versión vieja del generador en caché.
+    exclude: ['@cee/certificate-generator'],
+  },
+  server: {
+    watch: {
+      ignored: ['**/node_modules/**', '!**/packages/certificate-generator/**'],
+    },
+  },
 });

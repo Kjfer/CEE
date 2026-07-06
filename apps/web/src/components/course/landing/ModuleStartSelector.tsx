@@ -1,6 +1,6 @@
 import type { ProgramModule } from '@cee/types';
 import clsx from 'clsx';
-import { formatModuleTitle, moduleLabel } from '@/lib/roman';
+import { moduleLabel } from '@/lib/roman';
 
 interface ModuleStartSelectorProps {
   modules: ProgramModule[];
@@ -36,7 +36,7 @@ export function ModuleStartSelector({ modules, selectedSortOrder, onSelect }: Mo
               )}
             >
               <span className="font-medium text-foreground">
-                {moduleLabel(mod.sortOrder)} — {formatModuleTitle(mod.course.title, mod.sortOrder)}
+                {moduleLabel(mod.sortOrder)} — {mod.course.title}
               </span>
               {isRecommended && (
                 <span className="ml-2 shrink-0 rounded-full bg-cee-red/10 px-2 py-0.5 text-[10px] font-bold uppercase text-cee-red">

@@ -8,15 +8,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/useToast';
 import { contactService } from '@/services/contact.service';
 import { formatPrice } from '@/lib/utils';
-import { formatModuleTitle, moduleLabel } from '@/lib/roman';
+import { moduleLabel } from '@/lib/roman';
 import { ROUTES } from '@/constants/routes';
 import { INSCRIPTION_ANCHOR_ID } from './landing-utils';
-import { ModuleStartSelector } from './ModuleStartSelector';
 
 interface ProgramInscriptionFormProps {
   program: ProgramWithModules;
   selectedSortOrder: number;
-  onModuleSelect: (sortOrder: number) => void;
   source?: string;
 }
 
@@ -58,7 +56,6 @@ function findModule(modules: ProgramModule[], sortOrder: number): ProgramModule 
 export function ProgramInscriptionForm({
   program,
   selectedSortOrder,
-  onModuleSelect,
   source = 'program-sidebar',
 }: ProgramInscriptionFormProps) {
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
@@ -95,8 +92,7 @@ export function ProgramInscriptionForm({
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
 
-    const moduleTitle = formatModuleTitle(selectedModule.course.title, selectedModule.sortOrder);
-    const leadTitle = `${program.title} — ${moduleLabel(selectedModule.sortOrder)}: ${moduleTitle}`;
+    const leadTitle = `${program.title} — ${moduleLabel(selectedModule.sortOrder)}: ${selectedModule.course.title}`;
 
     setIsSubmitting(true);
     try {
@@ -147,7 +143,7 @@ export function ProgramInscriptionForm({
         </div>
         <h2 className="mt-2 text-lg font-bold text-foreground">Reserva tu cupo</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {program.moduleCount} módulos · Elige desde dónde quieres empezar.
+          Déjanos tus datos y un asesor te contactará para completar tu inscripción.
         </p>
       </div>
 
@@ -181,12 +177,6 @@ export function ProgramInscriptionForm({
                 onChange={handleChange('website')}
               />
             </div>
-
-            <ModuleStartSelector
-              modules={program.modules}
-              selectedSortOrder={selectedSortOrder}
-              onSelect={onModuleSelect}
-            />
 
             <div className="grid gap-1">
               <Label htmlFor="program-lead-name">Nombre completo *</Label>

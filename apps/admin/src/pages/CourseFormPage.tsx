@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { CourseCategory, CourseModality, CourseStatus, Instructor } from '@cee/types';
-import { Paperclip, UploadCloud, FileText, X, ImageIcon, ChevronDown } from 'lucide-react';
+import { UploadCloud, X, ImageIcon, ChevronDown, Calculator, FileText } from 'lucide-react';
+import { calculateAcademicHours } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +34,8 @@ interface FormValues {
   modality: CourseModality;
   moodleCourseId: string;
   status: CourseStatus;
+  level: string;
+  academicHours: string;
   durationWeeks: string;
   scheduleDescription: string;
   startDate: string;
@@ -50,6 +53,8 @@ const INITIAL_VALUES: FormValues = {
   modality: 'Virtual',
   moodleCourseId: '',
   status: 'draft',
+  level: 'Básico',
+  academicHours: '',
   durationWeeks: '',
   scheduleDescription: '',
   startDate: '',
@@ -153,6 +158,8 @@ export default function CourseFormPage() {
           modality: course.modality,
           moodleCourseId: course.moodleCourseId != null ? String(course.moodleCourseId) : '',
           status: course.status,
+          level: course.level || 'Básico',
+          academicHours: course.academicHours != null ? String(course.academicHours) : '',
           durationWeeks: course.durationWeeks != null ? String(course.durationWeeks) : '',
           scheduleDescription: course.scheduleDescription ?? '',
           startDate: course.startDate ? course.startDate.slice(0, 10) : '',
@@ -250,6 +257,17 @@ export default function CourseFormPage() {
     setIsGalleryOpen(false);
   };
 
+  const handleCalculateHours = () => {
+    const weeks = Number(values.durationWeeks);
+    if (!weeks || !values.scheduleDescription) {
+      error('Faltan datos', 'Ingresa semanas y horario para calcular.');
+      return;
+    }
+    const total = calculateAcademicHours(weeks, values.scheduleDescription);
+    setValues(prev => ({ ...prev, academicHours: String(total) }));
+    success('Cálculo exitoso', `Se calcularon ${total} horas académicas.`);
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -269,6 +287,8 @@ export default function CourseFormPage() {
         modality: values.modality,
         moodleCourseId: Number(values.moodleCourseId.trim()),
         status: values.status,
+        level: values.level as any,
+        academicHours: values.academicHours ? Number(values.academicHours) : 0,
         syllabusFileName,
         syllabusFile,
         imageFileName,
@@ -339,7 +359,7 @@ export default function CourseFormPage() {
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3 items-start">
+            <div className="grid gap-4 sm:grid-cols-4 items-start">
               <div className="grid gap-1.5">
                 <Label htmlFor="category">Categoría</Label>
                 <select
@@ -368,6 +388,22 @@ export default function CourseFormPage() {
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {MODALITY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="level">Nivel</Label>
+                <select
+                  id="level"
+                  value={values.level}
+                  onChange={handleChange('level')}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {['Básico', 'Intermedio', 'Avanzado'].map((option) => (
                     <option key={option} value={option}>
                       {option}
                     </option>
@@ -492,6 +528,22 @@ export default function CourseFormPage() {
                 value={values.scheduleDescription}
                 onChange={(val) => setValues(prev => ({ ...prev, scheduleDescription: val }))}
               />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 items-end">
+              <div className="grid gap-1.5">
+                <Label htmlFor="academicHours">Horas Académicas</Label>
+                <Input
+                  id="academicHours"
+                  type="number"
+                  min="0"
+                  value={values.academicHours}
+                  onChange={handleChange('academicHours')}
+                />
+              </div>
+              <Button type="button" variant="secondary" onClick={handleCalculateHours}>
+                <Calculator className="w-4 h-4 mr-2" /> Calcular horas
+              </Button>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3 items-start">

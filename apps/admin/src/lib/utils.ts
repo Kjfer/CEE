@@ -41,3 +41,34 @@ export function slugify(text: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+
+export function calculateAcademicHours(weeks: number, scheduleText: string): number {
+  if (!weeks || !scheduleText) return 0;
+  
+  const timeRegex = /(?:[0-1]?[0-9]|2[0-3]):[0-5][0-9]\s*(?:-|a|al|to)\s*(?:[0-1]?[0-9]|2[0-3]):[0-5][0-9]/gi;
+  const matches = scheduleText.match(timeRegex);
+  
+  if (!matches || matches.length === 0) return 0;
+
+  let totalHoursPerWeek = 0;
+
+  for (const match of matches) {
+    const times = match.match(/(?:[0-1]?[0-9]|2[0-3]):[0-5][0-9]/g);
+    if (times && times.length === 2) {
+      const [start, end] = times;
+      const [startHour, startMin] = start.split(':').map(Number);
+      const [endHour, endMin] = end.split(':').map(Number);
+      
+      const startTotal = startHour + startMin / 60;
+      const endTotal = endHour + endMin / 60;
+      
+      let diff = endTotal - startTotal;
+      if (diff < 0) {
+        diff += 24;
+      }
+      totalHoursPerWeek += diff;
+    }
+  }
+
+  return Math.round(totalHoursPerWeek * weeks);
+}

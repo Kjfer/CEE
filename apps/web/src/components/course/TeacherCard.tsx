@@ -5,7 +5,7 @@ interface TeacherCardProps {
   instructor: Instructor | Teacher;
 }
 
-function hasUpcomingEvents(instructor: Instructor | Teacher): instructor is Teacher {
+function hasUpcomingEvents(instructor: Instructor | Teacher): instructor is Teacher & { upcomingEvents: any[] } {
   return 'upcomingEvents' in instructor;
 }
 

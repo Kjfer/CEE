@@ -10,6 +10,7 @@
     "preview": "vite preview --host 0.0.0.0 --port 4174"
   },
   "dependencies": {
+    "@cee/certificate-generator": "workspace:*",
     "@cee/types": "workspace:^",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/poppins": "^5.2.7",

@@ -24,6 +24,10 @@ export const settingsService = {
         history: data.history,
         aboutImageUrl: data.about_image_url,
         heroImages: data.hero_images,
+        termsPdfUrl: data.terms_pdf_url,
+        termsPdfPath: data.terms_pdf_path,
+        termsPdfName: data.terms_pdf_name,
+        termsPdfUpdatedAt: data.terms_pdf_updated_at,
         updatedAt: data.updated_at,
       },
     };

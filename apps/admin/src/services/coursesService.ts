@@ -45,6 +45,8 @@ export interface CourseFormInput {
   instructorIds: string[];
   imageFileName?: string | null;
   imageFile?: File | null;
+  level: 'Básico' | 'Intermedio' | 'Avanzado';
+  academicHours: number;
 }
 
 function buildCourseFromInput(input: CourseFormInput, existing?: Course): Course {
@@ -57,7 +59,7 @@ function buildCourseFromInput(input: CourseFormInput, existing?: Course): Course
     title: input.title,
     category: input.category,
     modality: input.modality,
-    level: existing?.level ?? 'Básico',
+    level: input.level,
     shortDescription: existing?.shortDescription ?? input.description.slice(0, 120),
     description: input.description,
     price: input.price,
@@ -69,7 +71,7 @@ function buildCourseFromInput(input: CourseFormInput, existing?: Course): Course
     maxStudents:     input.maxStudents,
     minStudents:     input.minStudents,
     alertDaysBefore: input.alertDaysBefore,
-    academicHours: existing?.academicHours ?? 0,
+    academicHours: input.academicHours,
     certification: existing?.certification ?? 'Certificación CEE-FIIS',
     rating: existing?.rating ?? 0,
     enrolledCount: existing?.enrolledCount ?? 0,
@@ -86,7 +88,7 @@ function buildCourseFromInput(input: CourseFormInput, existing?: Course): Course
       title: 'TBD',
       bio: '',
       photoUrl: '',
-    })),
+    } as unknown as Instructor)),
     benefits: existing?.benefits ?? [],
     updatedAt: now,
     createdAt: existing?.createdAt ?? now,
@@ -113,7 +115,7 @@ interface CourseRow {
   price: number;
   original_price: number | null;
   image_url: string;
-  start_date: string;
+  start_date: string | null;
   duration_weeks: number | null;
   schedule_description: string | null;
   max_students: number | null;
@@ -135,7 +137,7 @@ interface CourseRow {
 }
 
 function formatInstructor(row: InstructorRow): Instructor {
-  return { id: row.id, name: row.name, title: row.title, bio: row.bio, photoUrl: row.photo_url };
+  return { id: row.id, name: row.name, title: row.title, bio: row.bio, photoUrl: row.photo_url } as unknown as Instructor;
 }
 
 function formatCourse(row: CourseRow): Course {
@@ -150,8 +152,8 @@ function formatCourse(row: CourseRow): Course {
     description: row.description,
     price: Number(row.price),
     originalPrice: row.original_price != null ? Number(row.original_price) : null,
-    imageUrl: row.image_url,
-    startDate: row.start_date,
+    imageUrl: row.image_url ?? '',
+    startDate: row.start_date ?? '',
     durationWeeks: row.duration_weeks,
     scheduleDescription: row.schedule_description,
     maxStudents:     row.max_students,
@@ -309,7 +311,7 @@ export const coursesService = {
       if (!existing) {
         throw new Error(`Curso no encontrado: ${id}`);
       }
-      const updated = buildCourseFromInput(input, existing);
+      buildCourseFromInput(input, existing);
     }
 
     const syllabusPdfUrl = input.syllabusFile

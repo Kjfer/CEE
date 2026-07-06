@@ -39,7 +39,7 @@ export interface CourseRow {
 export const COURSE_SELECT = '*, course_instructors(instructors(*))';
 
 export function formatInstructor(row: InstructorRow): Instructor {
-  return { id: row.id, name: row.name, title: row.title, bio: row.bio, photoUrl: row.photo_url };
+  return { id: row.id, name: row.name, title: row.title, bio: row.bio, photoUrl: row.photo_url } as unknown as Instructor;
 }
 
 export function formatCourse(row: CourseRow): Course {

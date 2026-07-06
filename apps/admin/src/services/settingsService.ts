@@ -1,4 +1,4 @@
-import type { ApiResponse, Setting } from '@cee/types';
+import type { ApiResponse, Setting, SiteSettings } from '@cee/types';
 import { mockSettings } from '@/mocks/settings.mock';
 import { supabase } from '@/lib/supabase';
 
@@ -99,6 +99,10 @@ export const settingsService = {
         history: data.history,
         aboutImageUrl: data.about_image_url,
         heroImages: data.hero_images,
+        termsPdfUrl: data.terms_pdf_url,
+        termsPdfPath: data.terms_pdf_path,
+        termsPdfName: data.terms_pdf_name,
+        termsPdfUpdatedAt: data.terms_pdf_updated_at,
         updatedAt: data.updated_at,
       },
     };
@@ -138,6 +142,10 @@ export const settingsService = {
         history: data.history,
         aboutImageUrl: data.about_image_url,
         heroImages: data.hero_images,
+        termsPdfUrl: data.terms_pdf_url,
+        termsPdfPath: data.terms_pdf_path,
+        termsPdfName: data.terms_pdf_name,
+        termsPdfUpdatedAt: data.terms_pdf_updated_at,
         updatedAt: data.updated_at,
       },
     };
@@ -153,5 +161,72 @@ export const settingsService = {
     if (error) throw new Error('No se pudo subir la imagen del sitio.');
 
     return supabase.storage.from('site-images').getPublicUrl(path).data.publicUrl;
-  }
+  },
+
+  // ---------- Términos y Condiciones (PDF único) ----------
+  async uploadTermsPdf(file: File): Promise<SiteSettings> {
+    if (file.type !== 'application/pdf') {
+      throw new Error('El archivo debe ser un PDF.');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('El PDF no debe superar los 10MB.');
+    }
+
+    const { data: current } = await supabase
+      .from('site_settings')
+      .select('terms_pdf_path')
+      .eq('id', 1)
+      .single();
+    const previousPath = (current as { terms_pdf_path: string | null } | null)?.terms_pdf_path ?? null;
+
+    const path = `terms/${crypto.randomUUID()}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from('legal-documents')
+      .upload(path, file, { contentType: 'application/pdf' });
+    if (uploadError) throw new Error('No se pudo subir el archivo de Términos y Condiciones.');
+
+    const publicUrl = supabase.storage.from('legal-documents').getPublicUrl(path).data.publicUrl;
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('site_settings')
+      .update({
+        terms_pdf_url: publicUrl,
+        terms_pdf_path: path,
+        terms_pdf_name: file.name,
+        terms_pdf_updated_at: now,
+        updated_at: now,
+      })
+      .eq('id', 1)
+      .select('*')
+      .single();
+
+    if (error || !data) {
+      // Revertir el archivo recién subido si no se pudo registrar en la BD.
+      await supabase.storage.from('legal-documents').remove([path]);
+      throw new Error('No se pudo actualizar la configuración con el nuevo PDF.');
+    }
+
+    // Recién ahora borramos el PDF anterior, para no perder ningún archivo si algo falló antes.
+    if (previousPath && previousPath !== path) {
+      await supabase.storage.from('legal-documents').remove([previousPath]);
+    }
+
+    return {
+      id: data.id,
+      aboutTitle: data.about_title,
+      aboutSubtitle: data.about_subtitle,
+      aboutDescription: data.about_description,
+      mission: data.mission,
+      vision: data.vision,
+      history: data.history,
+      aboutImageUrl: data.about_image_url,
+      heroImages: data.hero_images,
+      termsPdfUrl: data.terms_pdf_url,
+      termsPdfPath: data.terms_pdf_path,
+      termsPdfName: data.terms_pdf_name,
+      termsPdfUpdatedAt: data.terms_pdf_updated_at,
+      updatedAt: data.updated_at,
+    };
+  },
 };

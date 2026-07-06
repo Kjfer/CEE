@@ -8,6 +8,8 @@ const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const CoursesListPage = lazy(() => import('@/pages/CoursesListPage'));
 const CourseFormPage = lazy(() => import('@/pages/CourseFormPage'));
 const CourseDetailPage = lazy(() => import('@/pages/courses/CourseDetailPage'));
+const ProgramsListPage = lazy(() => import('@/pages/programs/ProgramsListPage'));
+const ProgramFormPage = lazy(() => import('@/pages/programs/ProgramFormPage'));
 const InstructorsListPage = lazy(() => import('@/pages/instructors/InstructorsListPage'));
 const InstructorFormPage = lazy(() => import('@/pages/instructors/InstructorFormPage'));
 const BenefitsListPage = lazy(() => import('@/pages/BenefitsListPage'));
@@ -30,6 +32,7 @@ const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const AboutUsFormPage = lazy(() => import('@/pages/settings/AboutUsFormPage'));
 const AdminsListPage = lazy(() => import('@/pages/settings/AdminsListPage'));
+const TermsConditionsPage = lazy(() => import('@/pages/settings/TermsConditionsPage'));
 const SecretariaChat = lazy(() => import('@/pages/SecretariaChat'));
 const BotPage = lazy(() => import('@/pages/BotPage'));
 const AccessDeniedPage = lazy(() => import('@/pages/AccessDeniedPage'));
@@ -57,6 +60,9 @@ export const router = createBrowserRouter([
           { path: '/cursos/nuevo', element: withSuspense(<CourseFormPage />) },
           { path: '/cursos/:id/editar', element: withSuspense(<CourseFormPage />) },
           { path: '/cursos/:id', element: withSuspense(<CourseDetailPage />) },
+          { path: '/programas', element: withSuspense(<ProgramsListPage />) },
+          { path: '/programas/nuevo', element: withSuspense(<ProgramFormPage />) },
+          { path: '/programas/:id/editar', element: withSuspense(<ProgramFormPage />) },
           { path: '/profesores', element: withSuspense(<InstructorsListPage />) },
           { path: '/profesores/nuevo', element: withSuspense(<InstructorFormPage />) },
           { path: '/profesores/:id/editar', element: withSuspense(<InstructorFormPage />) },
@@ -90,6 +96,7 @@ export const router = createBrowserRouter([
           { path: '/debug/consulta-datos', element: withSuspense(<BotPage />) },
           { path: '/configuracion/nosotros', element: withSuspense(<AboutUsFormPage />) },
           { path: '/configuracion/administradores', element: withSuspense(<AdminsListPage />) },
+          { path: '/configuracion/terminos', element: withSuspense(<TermsConditionsPage />) },
         ],
       },
     ],

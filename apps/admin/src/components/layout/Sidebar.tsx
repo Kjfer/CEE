@@ -20,6 +20,7 @@ import {
   Shield,
   Video,
   FileText,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { authService } from '@/services/auth.service';
@@ -29,6 +30,7 @@ import { useAuthStore } from '@/store/authStore';
 
 const TOP_ITEMS = [
   { label: 'Dashboard',  path: '/',           icon: LayoutDashboard },
+  { label: 'Programas',  path: '/programas',  icon: Layers },
   { label: 'Cursos',     path: '/cursos',     icon: BookOpen },
   { label: 'Profesores', path: '/profesores', icon: Users },
   { label: 'Eventos',    path: '/eventos',    icon: CalendarDays },
@@ -46,6 +48,7 @@ const BOTTOM_ITEMS = [
   { label: 'Certificados',   path: '/certificados',    icon: Award },
   { label: 'Notificaciones', path: '/notificaciones',  icon: Bell },
   { label: 'Web (Nosotros)', path: '/configuracion/nosotros', icon: Settings },
+  { label: 'Términos y Condiciones', path: '/configuracion/terminos', icon: FileText },
   { label: 'Administradores', path: '/configuracion/administradores', icon: Shield },
   { label: 'Asistente CEE',  path: '/asistente',       icon: Bot },
 ] as const;

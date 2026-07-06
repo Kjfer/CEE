@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
+declare module '*.png?url' {
+  const url: string;
+  export default url;
+}
+
 interface ImportMetaEnv {
   readonly VITE_USE_MOCKS: string;
   readonly VITE_SUPABASE_URL: string;

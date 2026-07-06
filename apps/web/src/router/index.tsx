@@ -24,6 +24,7 @@ const TermsPage = lazy(() => import('@/pages/legal/TermsPage'));
 const CookiePolicyPage = lazy(() => import('@/pages/legal/CookiePolicyPage'));
 const EventsPublicPage = lazy(() => import('@/pages/events/EventsPublicPage'));
 const EventDetailPage  = lazy(() => import('@/pages/events/EventDetailPage'));
+const CertificateVerifyPage = lazy(() => import('@/pages/certificate/CertificateVerifyPage'));
 const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 
 function withSuspense(element: JSX.Element) {
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.PRIVACY, element: withSuspense(<PrivacyPolicyPage />) },
       { path: ROUTES.TERMS, element: withSuspense(<TermsPage />) },
       { path: ROUTES.COOKIES, element: withSuspense(<CookiePolicyPage />) },
+      { path: ROUTES.CERTIFICATE_VERIFY, element: withSuspense(<CertificateVerifyPage />) },
       { path: '*', element: withSuspense(<NotFoundPage />) },
     ],
   },

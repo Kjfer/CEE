@@ -22,11 +22,12 @@ import { cn } from '@/lib/utils';
 const CERT_STATUS_CONFIG: Record<CertificateStatus, { label: string; cls: string }> = {
   draft:             { label: 'Borrador',          cls: 'bg-gray-100 text-gray-500 ring-1 ring-gray-200' },
   pending_signature: { label: 'Pendiente de Firma', cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' },
+  issued:            { label: 'Emitido',            cls: 'bg-sky-50 text-sky-700 ring-1 ring-sky-200' },
   signed:            { label: 'Firmado',            cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
   revoked:           { label: 'Anulado',            cls: 'bg-rose-50 text-rose-500 ring-1 ring-rose-200' },
 };
 
-const CHANGEABLE_STATUSES: CertificateStatus[] = ['draft', 'pending_signature', 'signed'];
+const CHANGEABLE_STATUSES: CertificateStatus[] = ['draft', 'pending_signature', 'issued', 'signed'];
 
 function CertStatusChip({ status }: { status: CertificateStatus }) {
   const { label, cls } = CERT_STATUS_CONFIG[status];
@@ -58,10 +59,19 @@ export default function CertificatesPage() {
     courseFilter, setCourseFilter,
     statusFilter, setStatusFilter,
     page, totalPages, goNext, goPrev, hasNext, hasPrev,
-    changeStatus, revoke,
+    changeStatus, revoke, regenerate,
   } = useCertificates();
 
-  const { success } = useToast();
+  const { success, error: toastError } = useToast();
+
+  const handleRegenerate = async (id: string) => {
+    try {
+      await regenerate(id);
+      success('Archivos regenerados', 'Se subió el PDF y la vista previa al almacenamiento.');
+    } catch (e) {
+      toastError('No se pudo regenerar', e instanceof Error ? e.message : 'Intenta de nuevo.');
+    }
+  };
 
   const handleChangeStatus = async (id: string, status: CertificateStatus) => {
     await changeStatus(id, status);
@@ -256,6 +266,10 @@ export default function CertificatesPage() {
                                 Cambiar a {CERT_STATUS_CONFIG[s].label}
                               </DropdownMenuItem>
                             ))}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleRegenerate(cert.id)}>
+                              Regenerar archivos (PDF/preview)
+                            </DropdownMenuItem>
                             {cert.status !== 'revoked' && (
                               <>
                                 <DropdownMenuSeparator />
