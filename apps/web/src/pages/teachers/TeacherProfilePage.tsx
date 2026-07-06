@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
-import { CalendarDays, Star, Briefcase, GraduationCap, Quote, Link as LinkIcon, ExternalLink } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Star, Briefcase, GraduationCap, Quote, Link as LinkIcon, ExternalLink } from 'lucide-react';
+
 import { Breadcrumb } from '@/components/shared/Breadcrumb';
 import { ROUTES } from '@/constants/routes';
 import { useTeacher } from '@/hooks/useTeacher';

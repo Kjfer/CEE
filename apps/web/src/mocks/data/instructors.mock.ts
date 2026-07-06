@@ -1,6 +1,6 @@
-import type { Instructor } from '@cee/types';
 
-export const instructorMendoza: Instructor = {
+
+export const instructorMendoza: any = {
   id: 'i001',
   name: 'Dr. Carlos Mendoza',
   title: 'Agile Coach & Consultor Senior en Transformación Organizacional',
@@ -9,7 +9,7 @@ export const instructorMendoza: Instructor = {
   linkedinUrl: 'https://linkedin.com/in/carlosmendoza',
 };
 
-export const instructorTorres: Instructor = {
+export const instructorTorres: any = {
   id: 'i002',
   name: 'Mg. Ana Torres',
   title: 'Data Scientist & Analista de Negocios Senior',
@@ -18,7 +18,7 @@ export const instructorTorres: Instructor = {
   linkedinUrl: 'https://linkedin.com/in/anatorres',
 };
 
-export const instructorQuispe: Instructor = {
+export const instructorQuispe: any = {
   id: 'i003',
   name: 'MBA. Luis Quispe',
   title: 'Director Financiero & Consultor en Finanzas Corporativas',
@@ -27,7 +27,7 @@ export const instructorQuispe: Instructor = {
   linkedinUrl: 'https://linkedin.com/in/luisquispe',
 };
 
-export const instructorParedes: Instructor = {
+export const instructorParedes: any = {
   id: 'i004',
   name: 'Dra. María Paredes',
   title: 'Coach Ejecutiva & Especialista en Desarrollo de Liderazgo',
@@ -36,7 +36,7 @@ export const instructorParedes: Instructor = {
   linkedinUrl: 'https://linkedin.com/in/mariaparedes',
 };
 
-export const instructorVargas: Instructor = {
+export const instructorVargas: any = {
   id: 'i005',
   name: 'Ing. Roberto Vargas',
   title: 'Experto en Lean Manufacturing, Six Sigma e Industria 4.0',
@@ -45,7 +45,7 @@ export const instructorVargas: Instructor = {
   linkedinUrl: 'https://linkedin.com/in/robertovargas',
 };
 
-export const instructorRojas: Instructor = {
+export const instructorRojas: any = {
   id: 'i006',
   name: 'Lic. Sandra Rojas',
   title: 'Especialista en Marketing Digital y Estrategia de Contenidos',
@@ -54,7 +54,7 @@ export const instructorRojas: Instructor = {
   linkedinUrl: 'https://linkedin.com/in/sandrojas',
 };
 
-export const instructorHuanca: Instructor = {
+export const instructorHuanca: any = {
   id: 'i007',
   name: 'Dr. Jorge Huanca',
   title: 'Machine Learning Engineer & Investigador en IA Aplicada',
@@ -63,7 +63,7 @@ export const instructorHuanca: Instructor = {
   linkedinUrl: 'https://linkedin.com/in/jorgehuanca',
 };
 
-export const instructorFlores: Instructor = {
+export const instructorFlores: any = {
   id: 'i008',
   name: 'Mg. Patricia Flores',
   title: 'Especialista en Comunicación Corporativa y Oratoria Ejecutiva',
@@ -72,7 +72,7 @@ export const instructorFlores: Instructor = {
   linkedinUrl: 'https://linkedin.com/in/patriciaflores',
 };
 
-export const mockInstructors: Instructor[] = [
+export const mockInstructors: any[] = [
   instructorMendoza,
   instructorTorres,
   instructorQuispe,

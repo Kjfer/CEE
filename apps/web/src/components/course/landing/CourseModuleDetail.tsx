@@ -13,7 +13,7 @@ export function CourseModuleDetail({ course }: CourseModuleDetailProps) {
     <div className="space-y-8 pt-2">
       <p className="text-sm leading-relaxed text-muted-foreground">{course.description}</p>
       {course.benefits.length > 0 && <LandingOutcomes items={course.benefits} />}
-      <LandingSyllabus modules={course.syllabus} />
+      <LandingSyllabus course={course} />
       <LandingInstructors instructors={course.instructors} />
     </div>
   );
