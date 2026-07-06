@@ -463,14 +463,6 @@ export default function ProfilePage() {
                   </div>
                 ))}
 
-                <div className="flex items-start gap-2 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>
-                    El correo de notificaciones también debe actualizarse en{' '}
-                    <strong>Supabase Dashboard → Edge Functions → Secrets → SECRETARY_EMAIL</strong>.
-                  </span>
-                </div>
-
                 <Feedback msg={settingsMsg} />
 
                 <Button

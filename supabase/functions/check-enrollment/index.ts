@@ -10,8 +10,33 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')              ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const RESEND_API_KEY            = Deno.env.get('RESEND_API_KEY')            ?? '';
-const SECRETARY_EMAIL           = Deno.env.get('SECRETARY_EMAIL')           ?? '';
 const ADMIN_URL                 = Deno.env.get('ADMIN_URL')                 ?? 'http://localhost:5174';
+
+// SECRETARY_EMAIL ya no se lee de un secret de la Edge Function — se lee de
+// la tabla `settings` (misma que edita el admin en "Configuración CEE"), así
+// se elimina la necesidad de sincronizar el valor manualmente en dos lugares.
+// El secret SECRETARY_EMAIL se mantiene sin usar como respaldo de emergencia
+// (fallback) si la tabla settings no tiene el valor por algún motivo.
+async function resolveSecretaryEmail(
+  supabase: ReturnType<typeof createClient>,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', 'secretary_email')
+    .single();
+
+  const fromSettings = (data as { value: string } | null)?.value?.trim();
+  if (!error && fromSettings) return fromSettings;
+
+  const fallback = Deno.env.get('SECRETARY_EMAIL') ?? '';
+  console.error(
+    '[check-enrollment] No se pudo leer "secretary_email" desde la tabla settings' +
+      (error ? ` (${error.message})` : ' (valor vacío)') +
+      (fallback ? ' — usando el secret SECRETARY_EMAIL como respaldo.' : ' — y el secret SECRETARY_EMAIL tampoco está configurado. No se enviará ningún correo.'),
+  );
+  return fallback;
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -87,6 +112,7 @@ serve(async (_req) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const today = new Date().toISOString().slice(0, 10);
+    const SECRETARY_EMAIL = await resolveSecretaryEmail(supabase);
 
     // 1. Get all published courses that have min_students and start_date configured
     const { data: courses, error: coursesError } = await supabase
