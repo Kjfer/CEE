@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/useToast';
 
+const API_BASE_URL = import.meta.env.VITE_BOT_URL?.trim().replace(/\/$/, '') ?? '';
+
 // ─── Tipos ─────────────────────────────────────────────────────────────────
 
 interface Message {
@@ -68,7 +70,7 @@ export default function BotPage() {
     setMessages((prev) => [...prev, userMsg, { id: assistantId, role: 'assistant', content: '' }]);
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, history: historyRef.current, userId: user?.id }),

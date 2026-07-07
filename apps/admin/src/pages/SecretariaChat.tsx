@@ -93,6 +93,8 @@ const TOOL_LABELS: Record<string, string> = {
   query_courses:     'Consultar cursos',
 };
 
+const API_BASE_URL = import.meta.env.VITE_BOT_URL?.trim().replace(/\/$/, '') ?? '';
+
 // ─── Tool definitions ─────────────────────────────────────────────────────────
 
 const TOOLS = [
@@ -190,7 +192,7 @@ const TOOLS = [
 class RateLimitError extends Error {}
 
 async function callGroq(messages: GroqMessage[], userId?: string): Promise<GroqResponse> {
-  const res = await fetch('/api/chat-completions', {
+  const res = await fetch(`${API_BASE_URL}/api/chat-completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
