@@ -56,7 +56,6 @@ interface Message {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const BOT_URL = (import.meta.env.VITE_BOT_URL as string | undefined) ?? 'http://localhost:3000';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 const timeFmt = new Intl.DateTimeFormat('es-PE', { hour: '2-digit', minute: '2-digit' });
@@ -186,12 +185,12 @@ const TOOLS = [
   },
 ];
 
-// ─── Groq API call (vía proxy de apps/bot — la key nunca vive en el navegador) ─
+// ─── Groq API call (vía función serverless propia — la key nunca vive en el navegador) ─
 
 class RateLimitError extends Error {}
 
 async function callGroq(messages: GroqMessage[], userId?: string): Promise<GroqResponse> {
-  const res = await fetch(`${BOT_URL}/api/chat-completions`, {
+  const res = await fetch('/api/chat-completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

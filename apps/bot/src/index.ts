@@ -1,3 +1,8 @@
+// Servidor de desarrollo local únicamente — no se despliega en producción.
+// Estos mismos endpoints viven ahora como Vercel Serverless Functions en
+// apps/admin/api/ (desplegadas junto con el resto del panel admin). Este
+// servidor Express se conserva como fallback para quien prefiera correr un
+// proceso local en vez de `vercel dev`.
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import { handleQuestion, handleQuestionStream, Message } from './handlers/message';
