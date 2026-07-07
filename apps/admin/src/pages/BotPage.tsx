@@ -12,8 +12,6 @@ interface Message {
   content: string;
 }
 
-const BOT_URL = (import.meta.env.VITE_BOT_URL as string | undefined) ?? 'http://localhost:3000';
-
 // ─── UI ────────────────────────────────────────────────────────────────────
 
 function Bubble({ msg }: { msg: Message }) {
@@ -70,10 +68,10 @@ export default function BotPage() {
     setMessages((prev) => [...prev, userMsg, { id: assistantId, role: 'assistant', content: '' }]);
 
     try {
-      const res = await fetch(`${BOT_URL}/api/chat`, {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, history: historyRef.current, stream: true, userId: user?.id }),
+        body: JSON.stringify({ question, history: historyRef.current, userId: user?.id }),
       });
 
       if (res.status === 429) {
@@ -85,46 +83,20 @@ export default function BotPage() {
         setMessages((prev) => prev.filter((m) => m.id !== assistantId && m.id !== userMsg.id));
         return;
       }
-      if (!res.ok || !res.body) {
+      if (!res.ok) {
         throw new Error(`Error del servidor (${res.status}).`);
       }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let full = '';
-
-      // Parseo incremental de eventos SSE ("data: {...}\n\n")
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const events = buffer.split('\n\n');
-        buffer = events.pop() ?? '';
-
-        for (const evt of events) {
-          const line = evt.trim();
-          if (!line.startsWith('data:')) continue;
-          const payload = line.slice(5).trim();
-          if (payload === '[DONE]') continue;
-
-          const parsed = JSON.parse(payload) as { token?: string; error?: string };
-          if (parsed.error) throw new Error(parsed.error);
-          if (parsed.token) {
-            if (full === '') setWaitingFirstToken(false);
-            full += parsed.token;
-            setMessages((prev) =>
-              prev.map((m) => (m.id === assistantId ? { ...m, content: full } : m)),
-            );
-          }
-        }
-      }
+      const { reply } = (await res.json()) as { reply: string };
+      setWaitingFirstToken(false);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantId ? { ...m, content: reply } : m)),
+      );
 
       historyRef.current = [
         ...historyRef.current,
         { role: 'user', content: question },
-        { role: 'assistant', content: full },
+        { role: 'assistant', content: reply },
       ];
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido. Intenta de nuevo.';
@@ -152,7 +124,7 @@ export default function BotPage() {
         <div>
           <p className="text-sm font-semibold text-white">🛠️ Debug interno — Consulta de datos (SQL)</p>
           <p className="text-[10px] text-white/60">
-            Herramienta de desarrollo para probar el flujo de texto→SQL de apps/bot (chatService.ts).
+            Herramienta de desarrollo para probar el flujo de texto→SQL (apps/admin/api/_lib/chatService.ts).
             No es el Asistente CEE — esta ruta no está enlazada en el menú y no debe usarse con secretarias.
           </p>
         </div>
