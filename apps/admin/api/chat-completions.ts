@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { chatRateLimiter } from './_lib/rateLimiter';
-import { forwardChatCompletion, type ChatCompletionProxyRequest } from './_lib/groqProxyService';
+import { chatRateLimiter } from './_lib/rateLimiter.js';
+import { forwardChatCompletion, type ChatCompletionProxyRequest } from './_lib/groqProxyService.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

@@ -3,7 +3,7 @@ import {
   getDashboardSummary,
   type DashboardSummaryKpis,
   type DashboardSummaryCategoryPoint,
-} from './_lib/dashboardSummaryService';
+} from './_lib/dashboardSummaryService.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

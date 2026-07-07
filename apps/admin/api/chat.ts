@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { chatRateLimiter } from './_lib/rateLimiter';
-import { chatWithData, type Message } from './_lib/chatService';
+import { chatRateLimiter } from './_lib/rateLimiter.js';
+import { chatWithData, type Message } from './_lib/chatService.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
